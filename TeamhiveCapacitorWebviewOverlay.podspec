@@ -1,6 +1,6 @@
 
   Pod::Spec.new do |s|
-    s.name = 'TeamHiveCapacitorWebviewOverlay'
+    s.name = 'TeamhiveCapacitorWebviewOverlay'
     s.version = '0.0.1'
     s.summary = 'Webview Overlay'
     s.license = 'MIT'

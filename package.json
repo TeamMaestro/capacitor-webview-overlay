@@ -22,7 +22,7 @@
         "dist/",
         "ios/",
         "android/",
-        "CapacitorWebviewOverlay.podspec"
+        "TeamHiveCapacitorWebviewOverlay.podspec"
     ],
     "keywords": [
         "capacitor",

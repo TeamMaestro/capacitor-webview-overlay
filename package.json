@@ -1,6 +1,6 @@
 {
     "name": "@teamhive/capacitor-webview-overlay",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "Webview Overlay",
     "main": "dist/esm/index.js",
     "types": "dist/esm/index.d.ts",

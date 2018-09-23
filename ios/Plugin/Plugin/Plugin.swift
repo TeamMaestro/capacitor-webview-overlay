@@ -66,7 +66,12 @@ public class WebviewOverlayPlugin: CAPPlugin, WKNavigationDelegate {
             self.webViewOverlay.scrollView.bounces = false
             self.capacitorWebView!.superview!.insertSubview(self.webViewOverlay, belowSubview: self.capacitorWebView!)
             
-            self.webViewOverlay.load(URLRequest(url: url!))
+            if url!.absoluteString.hasPrefix("file") {
+                self.webViewOverlay.loadFileURL(url!, allowingReadAccessTo: url!.deletingLastPathComponent())
+            }
+            else {
+                self.webViewOverlay.load(URLRequest(url: url!))
+            }
         }
     }
 
@@ -80,18 +85,20 @@ public class WebviewOverlayPlugin: CAPPlugin, WKNavigationDelegate {
     
     @objc func getSnapshot(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            let offset: CGPoint = self.webViewOverlay.scrollView.contentOffset
-            self.webViewOverlay.scrollView.setContentOffset(offset, animated: false)
-
-            self.webViewOverlay.takeSnapshot(with: nil) {image, error in
-                if let image = image {
-                    guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
-                        return
+            if (self.webViewOverlay != nil) {
+                let offset: CGPoint = self.webViewOverlay.scrollView.contentOffset
+                self.webViewOverlay.scrollView.setContentOffset(offset, animated: false)
+                
+                self.webViewOverlay.takeSnapshot(with: nil) {image, error in
+                    if let image = image {
+                        guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
+                            return
+                        }
+                        let base64String = jpeg.base64EncodedString()
+                        call.resolve(["src": "data:image/jpeg;base64," + base64String])
+                    } else {
+                        call.error("Failed taking snapshot: \(error?.localizedDescription ?? "--")")
                     }
-                    let base64String = jpeg.base64EncodedString()
-                    call.resolve(["src": "data:image/jpeg;base64," + base64String])
-                } else {
-                    call.error("Failed taking snapshot: \(error?.localizedDescription ?? "--")")
                 }
             }
         }

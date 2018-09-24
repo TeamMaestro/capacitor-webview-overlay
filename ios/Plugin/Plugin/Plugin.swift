@@ -82,10 +82,11 @@ public class WebviewOverlayPlugin: CAPPlugin {
      */
     override public func load() {
         self.capacitorWebView = self.bridge.bridgeDelegate.bridgedWebView
-        self.webviewOverlay = WebviewOverlay(self)
     }
     
     @objc func open(_ call: CAPPluginCall) {
+        self.webviewOverlay = WebviewOverlay(self)
+        
         self.hidden = false
         guard let urlString = call.getString("url") else {
             call.error("Must provide a URL to open")
@@ -113,6 +114,8 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func close(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             self.webviewOverlay.view.removeFromSuperview()
+            self.webviewOverlay.removeFromParentViewController()
+            self.webviewOverlay = nil
         }
     }
     
@@ -130,9 +133,12 @@ public class WebviewOverlayPlugin: CAPPlugin {
                         let base64String = jpeg.base64EncodedString()
                         call.resolve(["src": "data:image/jpeg;base64," + base64String])
                     } else {
-                        call.error("Failed taking snapshot: \(error?.localizedDescription ?? "--")")
+                        call.resolve(["src": ""])
                     }
                 }
+            }
+            else {
+                call.resolve(["src": ""])
             }
         }
     }

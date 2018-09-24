@@ -65,15 +65,21 @@ export class WebviewOverlay {
         return new Promise<void>(async (resolve) => {
             const snapshot = (await WebviewOverlayPlugin.getSnapshot()).src;
             if (snapshotVisible) {
-                var img = new Image();
-                img.onload = async () => {
-                    this.element.style.backgroundImage = `url(${snapshot})`;
-                    setTimeout(async() => {
-                        await WebviewOverlayPlugin.hide();    
-                        resolve();
-                    }, 25)
-                };
-                img.src = snapshot;
+                if (snapshot) {
+                    var img = new Image();
+                    img.onload = async () => {
+                        this.element.style.backgroundImage = `url(${snapshot})`;
+                        setTimeout(async() => {
+                            await WebviewOverlayPlugin.hide();    
+                            resolve();
+                        }, 25)
+                    };
+                    img.src = snapshot;
+                }
+                else {
+                    this.element.style.backgroundImage = `none`;
+                    resolve();
+                }
             }
             else {
                 this.element.style.backgroundImage = `none`;

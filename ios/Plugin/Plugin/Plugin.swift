@@ -3,7 +3,7 @@ import Capacitor
 
 @available(iOS 11.0, *)
 @objc(WebviewOverlayPlugin)
-public class WebviewOverlayPlugin: CAPPlugin, WKNavigationDelegate {
+public class WebviewOverlayPlugin: CAPPlugin, WKUIDelegate, WKNavigationDelegate {
     
     var capacitorWebView: WKWebView!
     var webViewOverlay: WKWebView!
@@ -32,6 +32,21 @@ public class WebviewOverlayPlugin: CAPPlugin, WKNavigationDelegate {
             self.notifyListeners("updateSnapshot", data: [:])
         }
         self.notifyListeners("pageLoaded", data: [:])
+    }
+    
+    public func webView(_ webView: WKWebView,
+                          createWebViewWith configuration: WKWebViewConfiguration,
+                          for navigationAction: WKNavigationAction,
+                          windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+            if url.absoluteString.hasPrefix("file") {
+                self.webViewOverlay.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            }
+            else {
+                self.webViewOverlay.load(URLRequest(url: url))
+            }
+        }
+        return nil
     }
     
     @objc func open(_ call: CAPPluginCall) {
@@ -63,6 +78,7 @@ public class WebviewOverlayPlugin: CAPPlugin, WKNavigationDelegate {
             let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
             self.webViewOverlay = WKWebView(frame: rect, configuration: webConfiguration)
             self.webViewOverlay.navigationDelegate = self
+            self.webViewOverlay.uiDelegate = self
             self.webViewOverlay.scrollView.bounces = false
             self.capacitorWebView!.superview!.insertSubview(self.webViewOverlay, belowSubview: self.capacitorWebView!)
             

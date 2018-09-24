@@ -8,4 +8,5 @@ CAP_PLUGIN(WebviewOverlayPlugin, "WebviewOverlayPlugin",
     CAP_PLUGIN_METHOD(hide, CAPPluginReturnPromise);
     CAP_PLUGIN_METHOD(updateDimensions, CAPPluginReturnPromise);
     CAP_PLUGIN_METHOD(getSnapshot, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(evaluateJavaScript, CAPPluginReturnPromise);
 )

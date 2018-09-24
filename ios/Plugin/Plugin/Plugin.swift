@@ -66,8 +66,6 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
 @objc(WebviewOverlayPlugin)
 public class WebviewOverlayPlugin: CAPPlugin {
     
-    var capacitorWebView: UIView!
-    
     var width: CGFloat!
     var height: CGFloat!
     var x: CGFloat!
@@ -80,9 +78,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
     /**
      * Capacitor Plugin load
      */
-    override public func load() {
-        self.capacitorWebView = self.bridge.bridgeDelegate.bridgedWebView
-    }
+    override public func load() {}
     
     @objc func open(_ call: CAPPluginCall) {
         self.webviewOverlay = WebviewOverlay(self)
@@ -113,9 +109,11 @@ public class WebviewOverlayPlugin: CAPPlugin {
 
     @objc func close(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.webviewOverlay.view.removeFromSuperview()
-            self.webviewOverlay.removeFromParentViewController()
-            self.webviewOverlay = nil
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.view.removeFromSuperview()
+                self.webviewOverlay.removeFromParentViewController()
+                self.webviewOverlay = nil
+            }
         }
     }
     
@@ -172,6 +170,34 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.hidden = true
             self.webviewOverlay.view.isHidden = true
             call.success()
+        }
+    }
+
+    @objc func evaluateJavaScript(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let javascript = call.getString("javascript") else {
+                call.error("Must provide javascript string")
+                return
+            }
+            if (self.webviewOverlay.webview != nil) {
+                func eval(completionHandler: @escaping (_ response: String?) -> Void) {
+                    self.webviewOverlay.webview.evaluateJavaScript(String(javascript)) { (value, error) in
+                        if error != nil {
+                            call.error(error?.localizedDescription ?? "unknown error")
+                        }
+                        else if let valueName = value as? String {
+                            completionHandler(valueName)
+                        }
+                    }
+                }
+                
+                eval(completionHandler: { response in
+                    call.resolve(["result": response as Any])
+                })
+            }
+            else {
+                call.resolve(["result": ""])
+            }
         }
     }
 }

@@ -89,6 +89,12 @@ export class WebviewOverlay {
         });
     }
 
+    async evaluateJavaScript(javascript: string): Promise<string> {
+        return (await WebviewOverlayPlugin.evaluateJavaScript({
+            javascript
+        })).result;
+    }
+
     onPageLoaded(listenerFunc: () => void) {
         this.pageLoadedEvent = WebviewOverlayPlugin.addListener('pageLoaded', listenerFunc);
     }

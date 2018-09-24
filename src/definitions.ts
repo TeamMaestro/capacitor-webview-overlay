@@ -27,6 +27,8 @@ export interface IWebviewOverlayPlugin {
 
     updateDimensions(options: Dimensions): Promise<void>;
 
+    evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;
+
     addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'orientationChanged', listenerFunc: () => void): PluginListenerHandle;
 }
 

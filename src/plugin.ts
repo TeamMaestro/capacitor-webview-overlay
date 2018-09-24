@@ -54,7 +54,6 @@ export class WebviewOverlay {
     }
 
     close(): Promise<void> {
-        this.element.style.backgroundImage = `none`;
         this.element = undefined;
         this.updateSnapshotEvent.remove()
         this.pageLoadedEvent.remove();

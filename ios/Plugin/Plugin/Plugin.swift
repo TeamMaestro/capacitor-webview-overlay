@@ -2,62 +2,91 @@ import Foundation
 import Capacitor
 
 @available(iOS 11.0, *)
-@objc(WebviewOverlayPlugin)
-public class WebviewOverlayPlugin: CAPPlugin, WKUIDelegate, WKNavigationDelegate {
+class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
-    var capacitorWebView: WKWebView!
-    var webViewOverlay: WKWebView!
+    var webview: WKWebView!
+    var plugin: WebviewOverlayPlugin!
+    
+    init(_ plugin: WebviewOverlayPlugin) {
+        super.init(nibName: "WebviewOverlay", bundle: nil)
+        self.plugin = plugin
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func loadView() {
+        let webConfiguration = WKWebViewConfiguration()
+        webConfiguration.allowsInlineMediaPlayback = true
+        webConfiguration.mediaTypesRequiringUserActionForPlayback = []
+        self.webview = WKWebView(frame: .zero, configuration: webConfiguration)
+        self.webview.uiDelegate = self
+        self.webview.navigationDelegate = self
+        
+        view = self.webview
+        self.webview.scrollView.bounces = false
+    }
+    
+    override public func viewWillTransition(to: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: to, with: coordinator)
+        coordinator.animate(alongsideTransition: nil, completion: { _ in
+            self.plugin.notifyListeners("orientationChanged", data: [:])
+        })
+    }
+    
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if (!plugin.hidden) {
+            self.view.isHidden = false
+        }
+        else {
+            plugin.notifyListeners("updateSnapshot", data: [:])
+        }
+        plugin.notifyListeners("pageLoaded", data: [:])
+    }
+    
+    public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+            self.loadUrl(url)
+        }
+        return nil
+    }
+    
+    public func loadUrl(_ url: URL) {
+        if url.absoluteString.hasPrefix("file") {
+            self.webview.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        }
+        else {
+            self.webview.load(URLRequest(url: url))
+        }
+    }
+}
+
+@available(iOS 11.0, *)
+@objc(WebviewOverlayPlugin)
+public class WebviewOverlayPlugin: CAPPlugin {
+    
+    var capacitorWebView: UIView!
     
     var width: CGFloat!
     var height: CGFloat!
     var x: CGFloat!
     var y: CGFloat!
     
-    var visible: Bool!
+    var hidden: Bool!
     
-    var orientationChangeObserver: Any!
+    var webviewOverlay: WebviewOverlay!
     
     /**
      * Capacitor Plugin load
      */
     override public func load() {
         self.capacitorWebView = self.bridge.bridgeDelegate.bridgedWebView
-    }
-    
-    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        if (self.visible) {
-            self.capacitorWebView!.superview!.bringSubview(toFront: self.webViewOverlay)
-        }
-        else {
-            self.notifyListeners("updateSnapshot", data: [:])
-        }
-        self.notifyListeners("pageLoaded", data: [:])
-    }
-    
-    public func webView(_ webView: WKWebView,
-                          createWebViewWith configuration: WKWebViewConfiguration,
-                          for navigationAction: WKNavigationAction,
-                          windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
-            if url.absoluteString.hasPrefix("file") {
-                self.webViewOverlay.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
-            }
-            else {
-                self.webViewOverlay.load(URLRequest(url: url))
-            }
-        }
-        return nil
+        self.webviewOverlay = WebviewOverlay(self)
     }
     
     @objc func open(_ call: CAPPluginCall) {
-        self.orientationChangeObserver = NotificationCenter.default.addObserver(forName: .UIApplicationDidChangeStatusBarOrientation, object: nil, queue: OperationQueue.main) { (note) in
-            let time = UIApplication.shared.statusBarOrientationAnimationDuration
-            DispatchQueue.main.asyncAfter(deadline: .now() + time) {
-                self.notifyListeners("orientationChanged", data: [:])
-            }
-        }
-        
-        self.visible = true
+        self.hidden = false
         guard let urlString = call.getString("url") else {
             call.error("Must provide a URL to open")
             return
@@ -71,41 +100,29 @@ public class WebviewOverlayPlugin: CAPPlugin, WKUIDelegate, WKNavigationDelegate
         self.y = CGFloat(call.getFloat("y") ?? 0)
         
         DispatchQueue.main.async {
-            let webConfiguration = WKWebViewConfiguration()
-            webConfiguration.allowsInlineMediaPlayback = true
-            webConfiguration.mediaTypesRequiringUserActionForPlayback = []
+            self.webviewOverlay.view.isHidden = true
+            self.bridge.viewController.addChildViewController(self.webviewOverlay)
+            self.bridge.viewController.view.addSubview(self.webviewOverlay.view)
+            self.webviewOverlay.view.frame = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
+            self.webviewOverlay.didMove(toParentViewController: self.bridge.viewController)
             
-            let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
-            self.webViewOverlay = WKWebView(frame: rect, configuration: webConfiguration)
-            self.webViewOverlay.navigationDelegate = self
-            self.webViewOverlay.uiDelegate = self
-            self.webViewOverlay.scrollView.bounces = false
-            self.capacitorWebView!.superview!.insertSubview(self.webViewOverlay, belowSubview: self.capacitorWebView!)
-            
-            if url!.absoluteString.hasPrefix("file") {
-                self.webViewOverlay.loadFileURL(url!, allowingReadAccessTo: url!.deletingLastPathComponent())
-            }
-            else {
-                self.webViewOverlay.load(URLRequest(url: url!))
-            }
+            self.webviewOverlay.loadUrl(url!)
         }
     }
 
     @objc func close(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            NotificationCenter.default.removeObserver(self.orientationChangeObserver)
-            self.webViewOverlay.removeFromSuperview()
-            self.webViewOverlay = nil
+            self.webviewOverlay.view.removeFromSuperview()
         }
     }
     
     @objc func getSnapshot(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            if (self.webViewOverlay != nil) {
-                let offset: CGPoint = self.webViewOverlay.scrollView.contentOffset
-                self.webViewOverlay.scrollView.setContentOffset(offset, animated: false)
+            if (self.webviewOverlay.webview != nil) {
+                let offset: CGPoint = self.webviewOverlay.webview.scrollView.contentOffset
+                self.webviewOverlay.webview.scrollView.setContentOffset(offset, animated: false)
                 
-                self.webViewOverlay.takeSnapshot(with: nil) {image, error in
+                self.webviewOverlay.webview.takeSnapshot(with: nil) {image, error in
                     if let image = image {
                         guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
                             return
@@ -127,9 +144,9 @@ public class WebviewOverlayPlugin: CAPPlugin, WKUIDelegate, WKNavigationDelegate
             self.x = CGFloat(call.getFloat("x") ?? 0)
             self.y = CGFloat(call.getFloat("y") ?? 0)
             let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
-            self.webViewOverlay.frame = rect
+            self.webviewOverlay.view.frame = rect
             
-            if (!self.visible) {
+            if (self.hidden) {
                 self.notifyListeners("updateSnapshot", data: [:])
             }
             call.success()
@@ -138,16 +155,16 @@ public class WebviewOverlayPlugin: CAPPlugin, WKUIDelegate, WKNavigationDelegate
     
     @objc func show(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.visible = true
-            self.capacitorWebView!.superview!.bringSubview(toFront: self.webViewOverlay)
+            self.hidden = false
+            self.webviewOverlay.view.isHidden = false
             call.success()
         }
     }
     
     @objc func hide(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.visible = false
-            self.capacitorWebView!.superview!.sendSubview(toBack: self.webViewOverlay)
+            self.hidden = true
+            self.webviewOverlay.view.isHidden = true
             call.success()
         }
     }

@@ -37,6 +37,9 @@ interface OpenOptions extends Dimensions {
      * The URL to open the webview to
      */
     url: string;
+
+    javascript?: string;
+    injectionTime?: ScriptInjectionTime;
 }
 
 interface Dimensions {
@@ -44,4 +47,9 @@ interface Dimensions {
     height: number;
     x: number;
     y: number;
+}
+
+export enum ScriptInjectionTime {
+    atDocumentStart,
+    atDocumentEnd
 }

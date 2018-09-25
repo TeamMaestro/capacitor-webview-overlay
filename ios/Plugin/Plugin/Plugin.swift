@@ -6,10 +6,12 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     var webview: WKWebView!
     var plugin: WebviewOverlayPlugin!
+    var configuration: WKWebViewConfiguration!
     
-    init(_ plugin: WebviewOverlayPlugin) {
+    init(_ plugin: WebviewOverlayPlugin, configuration: WKWebViewConfiguration) {
         super.init(nibName: "WebviewOverlay", bundle: nil)
         self.plugin = plugin
+        self.configuration = configuration
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -17,10 +19,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     }
     
     override func loadView() {
-        let webConfiguration = WKWebViewConfiguration()
-        webConfiguration.allowsInlineMediaPlayback = true
-        webConfiguration.mediaTypesRequiringUserActionForPlayback = []
-        self.webview = WKWebView(frame: .zero, configuration: webConfiguration)
+        self.webview = WKWebView(frame: .zero, configuration: self.configuration)
         self.webview.uiDelegate = self
         self.webview.navigationDelegate = self
         
@@ -81,28 +80,54 @@ public class WebviewOverlayPlugin: CAPPlugin {
     override public func load() {}
     
     @objc func open(_ call: CAPPluginCall) {
-        self.webviewOverlay = WebviewOverlay(self)
-        
-        self.hidden = false
-        guard let urlString = call.getString("url") else {
-            call.error("Must provide a URL to open")
-            return
-        }
-
-        let url = URL(string: urlString)
-        
-        self.width = CGFloat(call.getFloat("width") ?? 0)
-        self.height = CGFloat(call.getFloat("height") ?? 0)
-        self.x = CGFloat(call.getFloat("x") ?? 0)
-        self.y = CGFloat(call.getFloat("y") ?? 0)
-        
         DispatchQueue.main.async {
+            let webConfiguration = WKWebViewConfiguration()
+            webConfiguration.allowsInlineMediaPlayback = true
+            webConfiguration.mediaTypesRequiringUserActionForPlayback = []
+            webConfiguration.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+            
+            // Content controller
+            let javascript = call.getString("javascript") ?? ""
+            if (javascript != "") {
+                var injectionTime: WKUserScriptInjectionTime!
+                switch(call.getInt("injectionTime")){
+                case 0:
+                    injectionTime = .atDocumentStart
+                    break;
+                case 1:
+                    injectionTime = .atDocumentEnd
+                    break;
+                default:
+                    injectionTime = .atDocumentStart
+                    break;
+                }
+                let contentController = WKUserContentController()
+                let script = WKUserScript(source: String(javascript), injectionTime: injectionTime, forMainFrameOnly: true)
+                contentController.addUserScript(script)
+                webConfiguration.userContentController = contentController
+            }
+            
+            self.webviewOverlay = WebviewOverlay(self, configuration: webConfiguration)
+            
+            self.hidden = false
+            guard let urlString = call.getString("url") else {
+                call.error("Must provide a URL to open")
+                return
+            }
+
+            let url = URL(string: urlString)
+            
+            self.width = CGFloat(call.getFloat("width") ?? 0)
+            self.height = CGFloat(call.getFloat("height") ?? 0)
+            self.x = CGFloat(call.getFloat("x") ?? 0)
+            self.y = CGFloat(call.getFloat("y") ?? 0)
+        
             self.webviewOverlay.view.isHidden = true
             self.bridge.viewController.addChildViewController(self.webviewOverlay)
             self.bridge.viewController.view.addSubview(self.webviewOverlay.view)
             self.webviewOverlay.view.frame = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
             self.webviewOverlay.didMove(toParentViewController: self.bridge.viewController)
-            
+        
             self.webviewOverlay.loadUrl(url!)
         }
     }
@@ -190,7 +215,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                         }
                     }
                 }
-                
+
                 eval(completionHandler: { response in
                     call.resolve(["result": response as Any])
                 })

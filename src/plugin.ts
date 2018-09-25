@@ -1,4 +1,5 @@
 import { Plugins, PluginListenerHandle } from '@capacitor/core';
+import { ScriptInjectionTime } from './definitions';
 const { WebviewOverlayPlugin } = Plugins;
 
 export interface WebviewOverlayOpenOptions {
@@ -6,6 +7,11 @@ export interface WebviewOverlayOpenOptions {
      * The URL to open the webview to
      */
     url: string;
+
+    script?: {
+        javascript: string;
+        injectionTime?: ScriptInjectionTime;
+    } 
 
     /**
      * The element to open the webview in place of. The webview will open with the same dimensions and fixed position on screen.
@@ -46,6 +52,8 @@ export class WebviewOverlay {
 
         return WebviewOverlayPlugin.open({
             url: options.url,
+            javascript: options.script ? options.script.javascript : '',
+            injectionTime: options.script ? (options.script.injectionTime || ScriptInjectionTime.atDocumentStart) : ScriptInjectionTime.atDocumentStart,
             width: boundingBox.width,
             height: boundingBox.height,
             x: boundingBox.x,

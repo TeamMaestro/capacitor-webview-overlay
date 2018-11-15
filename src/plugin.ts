@@ -29,9 +29,11 @@ export class WebviewOverlay {
 
     open(options: WebviewOverlayOpenOptions): Promise<void> {
         this.element = options.element;
-        this.element.style.backgroundSize = 'cover';
-        this.element.style.backgroundRepeat = 'no-repeat';
-        this.element.style.backgroundPosition = 'center';
+        if(this.element && this.element.style){
+            this.element.style.backgroundSize = 'cover';
+            this.element.style.backgroundRepeat = 'no-repeat';
+            this.element.style.backgroundPosition = 'center';
+        }
         const boundingBox = this.element.getBoundingClientRect() as DOMRect;
 
         this.updateSnapshotEvent = WebviewOverlayPlugin.addListener('updateSnapshot', () => {
@@ -63,9 +65,15 @@ export class WebviewOverlay {
 
     close(): Promise<void> {
         this.element = undefined;
-        this.updateSnapshotEvent.remove()
-        this.pageLoadedEvent.remove();
-        this.orientationChangedEvent.remove();
+        if(this.updateSnapshotEvent) {
+            this.updateSnapshotEvent.remove();
+        }
+        if(this.pageLoadedEvent) {
+            this.pageLoadedEvent.remove();
+        }
+        if(this.orientationChangedEvent) {
+            this.orientationChangedEvent.remove();
+        }
         return WebviewOverlayPlugin.close();
     }
 
@@ -76,7 +84,9 @@ export class WebviewOverlay {
                 if (snapshot) {
                     var img = new Image();
                     img.onload = async () => {
-                        this.element.style.backgroundImage = `url(${snapshot})`;
+                        if(this.element && this.element.style){
+                            this.element.style.backgroundImage = `url(${snapshot})`;
+                        }
                         setTimeout(async() => {
                             await WebviewOverlayPlugin.hide();    
                             resolve();
@@ -85,12 +95,16 @@ export class WebviewOverlay {
                     img.src = snapshot;
                 }
                 else {
-                    this.element.style.backgroundImage = `none`;
+                    if(this.element && this.element.style) {
+                        this.element.style.backgroundImage = `none`;
+                    }
                     resolve();
                 }
             }
             else {
-                this.element.style.backgroundImage = `none`;
+                if(this.element && this.element.style) {
+                    this.element.style.backgroundImage = `none`;
+                }
                 await WebviewOverlayPlugin.show();
                 resolve();
             }

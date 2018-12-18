@@ -25,6 +25,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         
         view = self.webview
         self.webview.scrollView.bounces = false
+        self.webview.allowsBackForwardNavigationGestures = true
     }
     
     override public func viewWillTransition(to: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -222,6 +223,33 @@ public class WebviewOverlayPlugin: CAPPlugin {
             }
             else {
                 call.resolve(["result": ""])
+            }
+        }
+    }
+    
+    @objc func goBack(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.webview.goBack()
+                call.success()
+            }
+        }
+    }
+    
+    @objc func goForward(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.webview.goForward()
+                call.success()
+            }
+        }
+    }
+    
+    @objc func reload(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.webview.reload()
+                call.success()
             }
         }
     }

@@ -25,6 +25,10 @@ export interface IWebviewOverlayPlugin {
     show(): Promise<void>;
     hide(): Promise<void>;
 
+    goBack(): Promise<void>;
+    goForward(): Promise<void>;
+    reload(): Promise<void>;
+
     updateDimensions(options: Dimensions): Promise<void>;
 
     evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;

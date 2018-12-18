@@ -254,4 +254,43 @@ public class WebviewOverlayPlugin extends Plugin {
             });
         }
     }
+
+    @PluginMethod()
+    public void goBack(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.goBack();
+                }
+                call.success();
+            }
+        });
+    }
+
+    @PluginMethod()
+    public void goForward(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.goForward();
+                }
+                call.success();
+            }
+        });
+    }
+
+    @PluginMethod()
+    public void reload(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.reload();
+                }
+                call.success();
+            }
+        });
+    }
 }

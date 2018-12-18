@@ -121,4 +121,14 @@ export class WebviewOverlay {
         this.pageLoadedEvent = WebviewOverlayPlugin.addListener('pageLoaded', listenerFunc);
     }
 
+    goBack() {
+        WebviewOverlayPlugin.goBack();
+    }
+    goForward() {
+        WebviewOverlayPlugin.goForward();
+    }
+    reload() {
+        WebviewOverlayPlugin.reload();
+    }
+
 }

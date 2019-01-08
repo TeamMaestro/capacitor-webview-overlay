@@ -45,10 +45,10 @@ export class WebviewOverlay {
         this.orientationChangedEvent = WebviewOverlayPlugin.addListener('orientationChanged', async () => {
             const boundingBox = options.element.getBoundingClientRect() as DOMRect;
             WebviewOverlayPlugin.updateDimensions({
-                width: boundingBox.width,
-                height: boundingBox.height,
-                x: boundingBox.x,
-                y: boundingBox.y
+                width: Math.round(boundingBox.width),
+                height: Math.round(boundingBox.height),
+                x: Math.round(boundingBox.x),
+                y: Math.round(boundingBox.y)
             });
         });
 
@@ -56,10 +56,10 @@ export class WebviewOverlay {
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
             injectionTime: options.script ? (options.script.injectionTime || ScriptInjectionTime.atDocumentStart) : ScriptInjectionTime.atDocumentStart,
-            width: boundingBox.width,
-            height: boundingBox.height,
-            x: boundingBox.x,
-            y: boundingBox.y
+            width: Math.round(boundingBox.width),
+            height: Math.round(boundingBox.height),
+            x: Math.round(boundingBox.x),
+            y: Math.round(boundingBox.y)
         });
     }
 

@@ -220,7 +220,7 @@ public class WebviewOverlayPlugin extends Plugin {
                     bm.compress(Bitmap.CompressFormat.JPEG, 100, os);
                     byte[] byteArray = os.toByteArray();
                     String src = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                    object.put("src", "data:image/jpeg;base64," + src);
+                    object.put("src", src);
                     call.resolve(object);
                 }
             });

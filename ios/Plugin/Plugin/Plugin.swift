@@ -155,7 +155,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                             return
                         }
                         let base64String = jpeg.base64EncodedString()
-                        call.resolve(["src": "data:image/jpeg;base64," + base64String])
+                        call.resolve(["src": base64String])
                     } else {
                         call.resolve(["src": ""])
                     }

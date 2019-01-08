@@ -78,21 +78,39 @@ export class WebviewOverlay {
     }
 
     async toggleSnapshot(snapshotVisible: boolean): Promise<void> {
+        const b64toBlob = (b64Data: string, contentType: string, sliceSize: number = 512) => {
+            const byteCharacters = atob(b64Data);
+            const byteArrays = [];
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            const blob = new Blob(byteArrays, { type: contentType });
+            return blob;
+        }    
+
         return new Promise<void>(async (resolve) => {
             const snapshot = (await WebviewOverlayPlugin.getSnapshot()).src;
             if (snapshotVisible) {
                 if (snapshot) {
-                    var img = new Image();
+                    const blob = b64toBlob(snapshot, 'image/jpeg');
+                    const blobUrl = URL.createObjectURL(blob);
+                    const img = new Image();
                     img.onload = async () => {
-                        if(this.element && this.element.style){
-                            this.element.style.backgroundImage = `url(${snapshot})`;
+                        if (this.element && this.element.style) {
+                            this.element.style.backgroundImage = `url(${blobUrl})`;
                         }
                         setTimeout(async() => {
                             await WebviewOverlayPlugin.hide();    
                             resolve();
                         }, 25)
                     };
-                    img.src = snapshot;
+                    img.src = blobUrl;
                 }
                 else {
                     if(this.element && this.element.style) {

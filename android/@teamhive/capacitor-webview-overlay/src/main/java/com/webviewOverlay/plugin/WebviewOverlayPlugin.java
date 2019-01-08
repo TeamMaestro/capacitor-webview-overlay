@@ -58,10 +58,12 @@ public class WebviewOverlayPlugin extends Plugin {
                 webView = new WebView(getContext());
                 webView.addJavascriptInterface(new WVInterface(), "webviewOverlay");
                 WebSettings settings = webView.getSettings();
+                settings.setAllowContentAccess(true);
                 settings.setAllowFileAccess(true);
                 settings.setAllowFileAccessFromFileURLs(true);
                 settings.setJavaScriptEnabled(true);
                 settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                settings.setDomStorageEnabled(true);
 
                 final String javascript = call.getString("javascript", "");
 

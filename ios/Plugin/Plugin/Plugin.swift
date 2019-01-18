@@ -24,6 +24,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         self.webview.navigationDelegate = self
         
         view = self.webview
+        view.isHidden = plugin.hidden
         self.webview.scrollView.bounces = false
         self.webview.allowsBackForwardNavigationGestures = true
     }
@@ -36,10 +37,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     }
     
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        if (!plugin.hidden) {
-            self.view.isHidden = false
-        }
-        else {
+        if (plugin.hidden) {
             plugin.notifyListeners("updateSnapshot", data: [:])
         }
         plugin.notifyListeners("pageLoaded", data: [:])
@@ -71,7 +69,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
     var x: CGFloat!
     var y: CGFloat!
     
-    var hidden: Bool!
+    var hidden: Bool = false
     
     var webviewOverlay: WebviewOverlay!
     
@@ -110,7 +108,6 @@ public class WebviewOverlayPlugin: CAPPlugin {
             
             self.webviewOverlay = WebviewOverlay(self, configuration: webConfiguration)
             
-            self.hidden = false
             guard let urlString = call.getString("url") else {
                 call.error("Must provide a URL to open")
                 return
@@ -145,20 +142,25 @@ public class WebviewOverlayPlugin: CAPPlugin {
     
     @objc func getSnapshot(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            if (self.webviewOverlay.webview != nil) {
-                let offset: CGPoint = self.webviewOverlay.webview.scrollView.contentOffset
-                self.webviewOverlay.webview.scrollView.setContentOffset(offset, animated: false)
-                
-                self.webviewOverlay.webview.takeSnapshot(with: nil) {image, error in
-                    if let image = image {
-                        guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
-                            return
+            if (self.webviewOverlay != nil) {
+                if (self.webviewOverlay.webview != nil) {
+                    let offset: CGPoint = self.webviewOverlay.webview.scrollView.contentOffset
+                    self.webviewOverlay.webview.scrollView.setContentOffset(offset, animated: false)
+                    
+                    self.webviewOverlay.webview.takeSnapshot(with: nil) {image, error in
+                        if let image = image {
+                            guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
+                                return
+                            }
+                            let base64String = jpeg.base64EncodedString()
+                            call.resolve(["src": base64String])
+                        } else {
+                            call.resolve(["src": ""])
                         }
-                        let base64String = jpeg.base64EncodedString()
-                        call.resolve(["src": base64String])
-                    } else {
-                        call.resolve(["src": ""])
                     }
+                }
+                else {
+                    call.resolve(["src": ""])
                 }
             }
             else {
@@ -186,7 +188,9 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func show(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             self.hidden = false
-            self.webviewOverlay.view.isHidden = false
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.view.isHidden = false
+            }
             call.success()
         }
     }
@@ -194,7 +198,9 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func hide(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             self.hidden = true
-            self.webviewOverlay.view.isHidden = true
+            if (self.webviewOverlay != nil) {
+                self.webviewOverlay.view.isHidden = true
+            }
             call.success()
         }
     }

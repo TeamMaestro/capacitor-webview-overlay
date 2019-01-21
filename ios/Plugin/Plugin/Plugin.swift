@@ -37,6 +37,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     }
     
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        view.isHidden = plugin.hidden
         if (plugin.hidden) {
             plugin.notifyListeners("updateSnapshot", data: [:])
         }
@@ -136,6 +137,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                 self.webviewOverlay.view.removeFromSuperview()
                 self.webviewOverlay.removeFromParentViewController()
                 self.webviewOverlay = nil
+                self.hidden = false
             }
         }
     }

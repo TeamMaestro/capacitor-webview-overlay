@@ -26,7 +26,7 @@ import android.util.Base64;
 @NativePlugin()
 public class WebviewOverlayPlugin extends Plugin {
     private WebView webView;
-    private boolean hidden;
+    private boolean hidden = false;
     private int width;
     private int height;
     private float x;
@@ -90,6 +90,7 @@ public class WebviewOverlayPlugin extends Plugin {
                         if (!hidden) {
                             webView.setVisibility(View.VISIBLE);
                         } else {
+                            webView.setVisibility(View.INVISIBLE);
                             notifyListeners("updateSnapshot", new JSObject());
                         }
 
@@ -99,8 +100,6 @@ public class WebviewOverlayPlugin extends Plugin {
 
                     }
                 });
-
-                hidden = false;
 
                 webView.setVisibility(View.INVISIBLE);
 
@@ -145,6 +144,7 @@ public class WebviewOverlayPlugin extends Plugin {
                         rootGroup.removeView(webView);
                         webView = null;
                     }
+                    hidden = false;
                 }
                 call.resolve();
             }
@@ -156,8 +156,8 @@ public class WebviewOverlayPlugin extends Plugin {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                hidden = false;
                 if (webView != null) {
-                    hidden = false;
                     webView.setVisibility(View.VISIBLE);
                 }
                 call.success();
@@ -170,8 +170,8 @@ public class WebviewOverlayPlugin extends Plugin {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                hidden = true;
                 if (webView != null) {
-                    hidden = true;
                     webView.setVisibility(View.INVISIBLE);
                 }
                 call.success();

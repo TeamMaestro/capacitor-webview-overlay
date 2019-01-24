@@ -4,7 +4,7 @@ import Capacitor
 @available(iOS 11.0, *)
 class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
-    var webview: WKWebView!
+    var webview: WKWebView?
     var plugin: WebviewOverlayPlugin!
     var configuration: WKWebViewConfiguration!
     
@@ -20,13 +20,13 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     override func loadView() {
         self.webview = WKWebView(frame: .zero, configuration: self.configuration)
-        self.webview.uiDelegate = self
-        self.webview.navigationDelegate = self
+        self.webview?.uiDelegate = self
+        self.webview?.navigationDelegate = self
         
         view = self.webview
         view.isHidden = plugin.hidden
-        self.webview.scrollView.bounces = false
-        self.webview.allowsBackForwardNavigationGestures = true
+        self.webview?.scrollView.bounces = false
+        self.webview?.allowsBackForwardNavigationGestures = true
     }
     
     override public func viewWillTransition(to: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -53,10 +53,10 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     public func loadUrl(_ url: URL) {
         if url.absoluteString.hasPrefix("file") {
-            self.webview.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            self.webview?.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         }
         else {
-            self.webview.load(URLRequest(url: url))
+            self.webview?.load(URLRequest(url: url))
         }
     }
 }
@@ -146,10 +146,10 @@ public class WebviewOverlayPlugin: CAPPlugin {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 if (self.webviewOverlay.webview != nil) {
-                    let offset: CGPoint = self.webviewOverlay.webview.scrollView.contentOffset
-                    self.webviewOverlay.webview.scrollView.setContentOffset(offset, animated: false)
+                    let offset: CGPoint = (self.webviewOverlay.webview?.scrollView.contentOffset)!
+                    self.webviewOverlay.webview?.scrollView.setContentOffset(offset, animated: false)
                     
-                    self.webviewOverlay.webview.takeSnapshot(with: nil) {image, error in
+                    self.webviewOverlay.webview?.takeSnapshot(with: nil) {image, error in
                         if let image = image {
                             guard let jpeg = UIImageJPEGRepresentation(image, CGFloat(1)) else {
                                 return
@@ -215,7 +215,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             }
             if (self.webviewOverlay.webview != nil) {
                 func eval(completionHandler: @escaping (_ response: String?) -> Void) {
-                    self.webviewOverlay.webview.evaluateJavaScript(String(javascript)) { (value, error) in
+                    self.webviewOverlay.webview?.evaluateJavaScript(String(javascript)) { (value, error) in
                         if error != nil {
                             call.error(error?.localizedDescription ?? "unknown error")
                         }
@@ -238,7 +238,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func goBack(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
-                self.webviewOverlay.webview.goBack()
+                self.webviewOverlay.webview?.goBack()
                 call.success()
             }
         }
@@ -247,7 +247,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func goForward(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
-                self.webviewOverlay.webview.goForward()
+                self.webviewOverlay.webview?.goForward()
                 call.success()
             }
         }
@@ -256,7 +256,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
     @objc func reload(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
-                self.webviewOverlay.webview.reload()
+                self.webviewOverlay.webview?.reload()
                 call.success()
             }
         }

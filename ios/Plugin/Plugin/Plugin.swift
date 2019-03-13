@@ -42,6 +42,15 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
             plugin.notifyListeners("updateSnapshot", data: [:])
         }
         plugin.notifyListeners("pageLoaded", data: [:])
+        
+        // Remove tap highlight
+        let script = "function addStyleString(str) {" +
+            "var node = document.createElement('style');" +
+            "node.innerHTML = str;" +
+            "document.body.appendChild(node);" +
+            "}" +
+        "addStyleString('html, body {-webkit-tap-highlight-color: transparent;}');"
+        webView.evaluateJavaScript(script)
     }
     
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {

@@ -27,6 +27,8 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         view.isHidden = plugin.hidden
         self.webview?.scrollView.bounces = false
         self.webview?.allowsBackForwardNavigationGestures = true
+        
+        self.webview?.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
     }
     
     override public func viewWillTransition(to: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -68,6 +70,13 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
             self.webview?.load(URLRequest(url: url))
         }
     }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if (keyPath == "estimatedProgress") {
+            plugin.notifyListeners("progress", data: ["value":self.webview?.estimatedProgress ?? 1])
+        }
+    }
+
 }
 
 @available(iOS 11.0, *)

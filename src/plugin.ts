@@ -26,6 +26,7 @@ export class WebviewOverlay {
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     orientationChangedEvent: PluginListenerHandle;
+    progressEvent: PluginListenerHandle;
 
     open(options: WebviewOverlayOpenOptions): Promise<void> {
         this.element = options.element;
@@ -73,6 +74,9 @@ export class WebviewOverlay {
         }
         if(this.orientationChangedEvent) {
             this.orientationChangedEvent.remove();
+        }
+        if(this.progressEvent) {
+            this.progressEvent.remove();
         }
         return WebviewOverlayPlugin.close();
     }
@@ -123,6 +127,10 @@ export class WebviewOverlay {
 
     onPageLoaded(listenerFunc: () => void) {
         this.pageLoadedEvent = WebviewOverlayPlugin.addListener('pageLoaded', listenerFunc);
+    }
+
+    onProgress(listenerFunc: (progress: { value: number }) => void) {
+        this.progressEvent = WebviewOverlayPlugin.addListener('progress', listenerFunc);
     }
 
     goBack() {

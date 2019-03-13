@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, NgZone } from '@angular/core';
 import { Platform, MenuController } from '@ionic/angular';
 import { WebviewOverlay } from '@teamhive/capacitor-webview-overlay';
 
@@ -10,12 +10,15 @@ import { WebviewOverlay } from '@teamhive/capacitor-webview-overlay';
 export class HomePage implements OnInit, OnDestroy {
 
     loading = true;
+    pageLoading = false;
+    progress: number;
     webview: WebviewOverlay;
     @ViewChild('webview') webviewEl: ElementRef;
 
     constructor(
         private platform: Platform,
-        private menuCtrl: MenuController
+        private menuCtrl: MenuController,
+        private zone: NgZone
     ) { }
 
     async ngOnInit() {
@@ -58,7 +61,24 @@ export class HomePage implements OnInit, OnDestroy {
             }, 500);
 
             this.webview.onPageLoaded(() => {
-                this.loading = false;
+                this.zone.run(() => {
+                    this.loading = false;
+                    setTimeout(() => {
+                        this.pageLoading = false;
+                        setTimeout(() => {
+                            this.progress = 0;
+                        }, 200);
+                    }, 500);
+                });
+            });
+
+            this.webview.onProgress((progress) => {
+                this.zone.run(() => {
+                    this.progress = progress.value;
+                    if (progress.value < 1) {
+                        this.pageLoading = true;
+                    }
+                });
             });
         }
     }

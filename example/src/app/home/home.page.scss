@@ -12,3 +12,13 @@
     width: 100%;
     height: 100%;
 }
+
+ion-progress-bar {
+    position: absolute;
+    top: 0;
+    opacity: 0;
+    transition: opacity .2s ease;
+    &.active {
+        opacity: 1;
+    }
+}

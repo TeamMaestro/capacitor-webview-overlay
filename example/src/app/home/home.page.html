@@ -24,6 +24,7 @@
 
 <ion-footer>
     <ion-toolbar>
+        <ion-progress-bar [class.active]="pageLoading" [value]="progress"></ion-progress-bar>
         <ion-buttons slot="start">
             <ion-button (click)="goBack()">
                 <ion-icon slot="icon-only" name="arrow-back"></ion-icon>

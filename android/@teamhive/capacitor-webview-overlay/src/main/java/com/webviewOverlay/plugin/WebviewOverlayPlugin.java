@@ -41,14 +41,6 @@ public class WebviewOverlayPlugin extends Plugin {
         return value * getContext().getResources().getDisplayMetrics().density + 0.5f;
     }
 
-    class WVInterface {
-        @JavascriptInterface
-        public void orientationChanged() {
-            notifyListeners("orientationChanged", new JSObject());
-        }
-
-    }
-
     @SuppressLint("SetJavaScriptEnabled")
     @PluginMethod()
     public void open(final PluginCall call) {
@@ -102,8 +94,6 @@ public class WebviewOverlayPlugin extends Plugin {
                         }
 
                         notifyListeners("pageLoaded", new JSObject());
-
-                        webView.evaluateJavascript("(function(){window.addEventListener('orientationchange',function(){setTimeout(function(){webviewOverlay.orientationChanged()},120)})})()", null);
                     }
                 });
 

@@ -13,7 +13,8 @@
     "author": "TeamHive",
     "license": "MIT",
     "dependencies": {
-        "@capacitor/core": "latest"
+        "@capacitor/core": "latest",
+        "resize-observer-polyfill": "^1.5.1"
     },
     "devDependencies": {
         "typescript": "^2.6.2"

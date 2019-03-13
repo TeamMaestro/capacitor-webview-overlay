@@ -2,6 +2,8 @@ import { Plugins, PluginListenerHandle } from '@capacitor/core';
 import { ScriptInjectionTime } from './definitions';
 const { WebviewOverlayPlugin } = Plugins;
 
+import ResizeObserver from 'resize-observer-polyfill';
+
 export interface WebviewOverlayOpenOptions {
     /**
      * The URL to open the webview to
@@ -25,12 +27,13 @@ export class WebviewOverlay {
     element: HTMLElement;
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
-    orientationChangedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
+    resizeObserver: ResizeObserver;
 
     open(options: WebviewOverlayOpenOptions): Promise<void> {
         this.element = options.element;
-        if(this.element && this.element.style){
+
+        if (this.element && this.element.style) {
             this.element.style.backgroundSize = 'cover';
             this.element.style.backgroundRepeat = 'no-repeat';
             this.element.style.backgroundPosition = 'center';
@@ -43,15 +46,18 @@ export class WebviewOverlay {
             }, 100)
         });
         
-        this.orientationChangedEvent = WebviewOverlayPlugin.addListener('orientationChanged', async () => {
-            const boundingBox = options.element.getBoundingClientRect() as DOMRect;
-            WebviewOverlayPlugin.updateDimensions({
-                width: Math.round(boundingBox.width),
-                height: Math.round(boundingBox.height),
-                x: Math.round(boundingBox.x),
-                y: Math.round(boundingBox.y)
-            });
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const _entry of entries) {
+                const boundingBox = options.element.getBoundingClientRect() as DOMRect;
+                WebviewOverlayPlugin.updateDimensions({
+                    width: Math.round(boundingBox.width),
+                    height: Math.round(boundingBox.height),
+                    x: Math.round(boundingBox.x),
+                    y: Math.round(boundingBox.y)
+                });    
+            }
         });
+        this.resizeObserver.observe(this.element);
 
         return WebviewOverlayPlugin.open({
             url: options.url,
@@ -66,14 +72,12 @@ export class WebviewOverlay {
 
     close(): Promise<void> {
         this.element = undefined;
+        this.resizeObserver.disconnect();
         if(this.updateSnapshotEvent) {
             this.updateSnapshotEvent.remove();
         }
         if(this.pageLoadedEvent) {
             this.pageLoadedEvent.remove();
-        }
-        if(this.orientationChangedEvent) {
-            this.orientationChangedEvent.remove();
         }
         if(this.progressEvent) {
             this.progressEvent.remove();

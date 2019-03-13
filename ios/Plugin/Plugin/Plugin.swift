@@ -31,13 +31,6 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         self.webview?.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
     }
     
-    override public func viewWillTransition(to: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        super.viewWillTransition(to: to, with: coordinator)
-        coordinator.animate(alongsideTransition: nil, completion: { _ in
-            self.plugin.notifyListeners("orientationChanged", data: [:])
-        })
-    }
-    
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         view.isHidden = plugin.hidden
         if (plugin.hidden) {

@@ -53,12 +53,10 @@ export class HomePage implements OnInit, OnDestroy {
         if (this.platform.is('capacitor')) {
             this.loading = true;
             this.webview = new WebviewOverlay();
-            setTimeout(() => {
-                this.webview.open({
-                    url: 'https://www.google.com',
-                    element: this.webviewEl.nativeElement
-                });
-            }, 500);
+            this.webview.open({
+                url: 'https://www.google.com',
+                element: this.webviewEl.nativeElement
+            });
 
             this.webview.onPageLoaded(() => {
                 this.zone.run(() => {

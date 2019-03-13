@@ -1,0 +1,6 @@
+{
+  "appId": "com.webview.example",
+  "appName": "webviewExample",
+  "bundledWebRuntime": false,
+  "webDir": "www"
+}

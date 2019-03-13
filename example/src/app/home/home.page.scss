@@ -1,0 +1,14 @@
+[slot=fixed] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+
+#webview {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}

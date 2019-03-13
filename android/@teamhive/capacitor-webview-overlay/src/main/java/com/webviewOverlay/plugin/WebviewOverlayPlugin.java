@@ -69,7 +69,14 @@ public class WebviewOverlayPlugin extends Plugin {
 
                 final int injectionTime = call.getInt("injectionTime", 0);
 
-                webView.setWebChromeClient(new WebChromeClient());
+                webView.setWebChromeClient(new WebChromeClient() {
+                    @Override
+                    public void onProgressChanged(WebView view, int progress) {
+                        JSObject progressValue = new JSObject();
+                        progressValue.put("value", progress/100.0);
+                        notifyListeners("progress", progressValue);
+                    }
+                });
 
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
@@ -97,7 +104,6 @@ public class WebviewOverlayPlugin extends Plugin {
                         notifyListeners("pageLoaded", new JSObject());
 
                         webView.evaluateJavascript("(function(){window.addEventListener('orientationchange',function(){setTimeout(function(){webviewOverlay.orientationChanged()},120)})})()", null);
-
                     }
                 });
 

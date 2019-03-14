@@ -28,12 +28,14 @@ export interface IWebviewOverlayPlugin {
     goBack(): Promise<void>;
     goForward(): Promise<void>;
     reload(): Promise<void>;
+    
+    handleNavigationEvent(options: {allow: boolean}): Promise<void>;
 
     updateDimensions(options: Dimensions): Promise<void>;
 
     evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;
 
-    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
+    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress' | 'navigationHandler', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
 }
 
 interface OpenOptions extends Dimensions {

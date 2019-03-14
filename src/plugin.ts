@@ -28,6 +28,7 @@ export class WebviewOverlay {
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
+    navigationHandlerEvent: PluginListenerHandle;
     resizeObserver: ResizeObserver;
 
     open(options: WebviewOverlayOpenOptions): Promise<void> {
@@ -73,14 +74,17 @@ export class WebviewOverlay {
     close(): Promise<void> {
         this.element = undefined;
         this.resizeObserver.disconnect();
-        if(this.updateSnapshotEvent) {
+        if (this.updateSnapshotEvent) {
             this.updateSnapshotEvent.remove();
         }
-        if(this.pageLoadedEvent) {
+        if (this.pageLoadedEvent) {
             this.pageLoadedEvent.remove();
         }
-        if(this.progressEvent) {
+        if (this.progressEvent) {
             this.progressEvent.remove();
+        }
+        if (this.navigationHandlerEvent) {
+            this.navigationHandlerEvent.remove();
         }
         return WebviewOverlayPlugin.close();
     }
@@ -135,6 +139,20 @@ export class WebviewOverlay {
 
     onProgress(listenerFunc: (progress: { value: number }) => void) {
         this.progressEvent = WebviewOverlayPlugin.addListener('progress', listenerFunc);
+    }
+
+    handleNavigation(listenerFunc: (event: {
+        url: string,
+        newWindow: boolean,
+        sameHost: boolean,
+        complete: (allow: boolean) => void
+    }) => void) {
+        this.navigationHandlerEvent = WebviewOverlayPlugin.addListener('navigationHandler', (event) => {
+            const complete = (allow: boolean) => {
+                WebviewOverlayPlugin.handleNavigationEvent({allow});
+            }
+            listenerFunc({...event, complete});
+        });
     }
 
     goBack() {

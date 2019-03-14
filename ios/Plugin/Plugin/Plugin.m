@@ -12,4 +12,5 @@ CAP_PLUGIN(WebviewOverlayPlugin, "WebviewOverlayPlugin",
     CAP_PLUGIN_METHOD(goBack, CAPPluginReturnPromise);
     CAP_PLUGIN_METHOD(goForward, CAPPluginReturnPromise);
     CAP_PLUGIN_METHOD(reload, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(handleNavigationEvent, CAPPluginReturnPromise);
 )

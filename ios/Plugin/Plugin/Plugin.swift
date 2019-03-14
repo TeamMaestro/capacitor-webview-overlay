@@ -8,6 +8,10 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     var plugin: WebviewOverlayPlugin!
     var configuration: WKWebViewConfiguration!
     
+    var currentDecisionHandler: ((WKNavigationResponsePolicy) -> Void)? = nil
+    
+    var openNewWindow: Bool = false
+    
     init(_ plugin: WebviewOverlayPlugin, configuration: WKWebViewConfiguration) {
         super.init(nibName: "WebviewOverlay", bundle: nil)
         self.plugin = plugin
@@ -50,9 +54,42 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+            if (plugin.hasListeners("navigationHandler")) {
+                self.openNewWindow = true
+            }
             self.loadUrl(url)
         }
         return nil
+    }
+    
+    public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        self.clearDecisionHandler()
+    }
+    
+    func clearDecisionHandler() {
+        if (self.currentDecisionHandler != nil) {
+            self.currentDecisionHandler!(.allow)
+            self.currentDecisionHandler = nil
+        }
+    }
+    
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if (self.currentDecisionHandler != nil) {
+            self.clearDecisionHandler()
+        }
+        if (plugin.hasListeners("navigationHandler")) {
+            self.currentDecisionHandler = decisionHandler
+            plugin.notifyListeners("navigationHandler", data: [
+                "url": navigationResponse.response.url?.absoluteString ?? "",
+                "newWindow": self.openNewWindow,
+                "sameHost": webView.url?.host == navigationResponse.response.url?.host
+            ])
+            self.openNewWindow = false
+        }
+        else {
+            decisionHandler(.allow)
+            return
+        }
     }
     
     public func loadUrl(_ url: URL) {
@@ -270,6 +307,20 @@ public class WebviewOverlayPlugin: CAPPlugin {
                 self.webviewOverlay.webview?.reload()
                 call.success()
             }
+        }
+    }
+    
+    @objc func handleNavigationEvent(_ call: CAPPluginCall) {
+        if (self.webviewOverlay != nil && self.webviewOverlay.currentDecisionHandler != nil) {
+            if (call.getBool("allow") ?? true) {
+                self.webviewOverlay.currentDecisionHandler!(.allow)
+            }
+            else {
+                self.webviewOverlay.currentDecisionHandler!(.cancel)
+                self.notifyListeners("pageLoaded", data: [:])
+            }
+            self.webviewOverlay.currentDecisionHandler = nil
+            call.success()
         }
     }
 }

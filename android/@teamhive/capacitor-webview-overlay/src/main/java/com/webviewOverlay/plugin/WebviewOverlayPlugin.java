@@ -48,7 +48,6 @@ public class WebviewOverlayPlugin extends Plugin {
             @Override
             public void run() {
                 webView = new WebView(getContext());
-                webView.addJavascriptInterface(new WVInterface(), "webviewOverlay");
                 WebSettings settings = webView.getSettings();
                 settings.setAllowContentAccess(true);
                 settings.setAllowFileAccess(true);

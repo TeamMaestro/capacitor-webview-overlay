@@ -62,6 +62,9 @@ public class WebviewOverlayPlugin extends Plugin {
                 settings.setDomStorageEnabled(true);
                 settings.setSupportMultipleWindows(true);
 
+                // Temp fix until this setting is on by default
+                bridge.getWebView().getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+
                 final String javascript = call.getString("javascript", "");
 
                 final int injectionTime = call.getInt("injectionTime", 0);

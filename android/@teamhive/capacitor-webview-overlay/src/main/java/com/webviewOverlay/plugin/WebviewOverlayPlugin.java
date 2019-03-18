@@ -2,10 +2,9 @@ package com.webviewOverlay.plugin;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.support.design.widget.CoordinatorLayout;
+import android.os.Message;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -19,6 +18,8 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 
 import java.io.ByteArrayOutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import android.util.Base64;
 
@@ -31,6 +32,10 @@ public class WebviewOverlayPlugin extends Plugin {
     private int height;
     private float x;
     private float y;
+
+    private boolean openNewWindow = false;
+    private String targetUrl;
+    private boolean loadNext = false;
 
     @Override
     public void load() {
@@ -55,6 +60,7 @@ public class WebviewOverlayPlugin extends Plugin {
                 settings.setJavaScriptEnabled(true);
                 settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                 settings.setDomStorageEnabled(true);
+                settings.setSupportMultipleWindows(true);
 
                 final String javascript = call.getString("javascript", "");
 
@@ -67,6 +73,25 @@ public class WebviewOverlayPlugin extends Plugin {
                         progressValue.put("value", progress/100.0);
                         notifyListeners("progress", progressValue);
                     }
+
+                    @Override
+                    public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                        final WebView targetWebView = new WebView(getActivity());
+                        targetWebView.setWebViewClient(new WebViewClient() {
+                            @Override
+                            public void onLoadResource(WebView view, String url) {
+                                openNewWindow = true;
+                                webView.loadUrl(url);
+                                targetWebView.removeAllViews();
+                                targetWebView.destroy();
+                            }
+                        });
+                        WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                        transport.setWebView(targetWebView);
+                        resultMsg.sendToTarget();
+                        return true;
+                    }
+
                 });
 
                 webView.setWebViewClient(new WebViewClient() {
@@ -93,6 +118,36 @@ public class WebviewOverlayPlugin extends Plugin {
                         }
 
                         notifyListeners("pageLoaded", new JSObject());
+                    }
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        targetUrl = url;
+                        if (hasListeners("navigationHandler") && !loadNext) {
+                            boolean sameHost;
+                            try {
+                                URL currentUrl = new URL(webView.getUrl());
+                                URL targetUrl = new URL(url);
+                                sameHost = currentUrl.getHost() == targetUrl.getHost();
+                            }
+                            catch(MalformedURLException e) {
+                                sameHost = true;
+                            }
+
+                            JSObject navigationHandlerValue = new JSObject();
+                            navigationHandlerValue.put("url", url);
+                            navigationHandlerValue.put("newWindow", openNewWindow);
+                            navigationHandlerValue.put("sameHost", sameHost);
+
+                            notifyListeners("navigationHandler", navigationHandlerValue);
+                            openNewWindow = false;
+                            return true;
+                        }
+                        else {
+                            openNewWindow = false;
+                            targetUrl = null;
+                            loadNext = false;
+                            return false;
+                        }
                     }
                 });
 
@@ -132,16 +187,16 @@ public class WebviewOverlayPlugin extends Plugin {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (webView != null) {
-                    ViewGroup rootGroup = ((ViewGroup) getBridge().getWebView().getParent());
-                    int count = rootGroup.getChildCount();
-                    if (count > 1) {
-                        rootGroup.removeView(webView);
-                        webView = null;
-                    }
-                    hidden = false;
+            if (webView != null) {
+                ViewGroup rootGroup = ((ViewGroup) getBridge().getWebView().getParent());
+                int count = rootGroup.getChildCount();
+                if (count > 1) {
+                    rootGroup.removeView(webView);
+                    webView = null;
                 }
-                call.resolve();
+                hidden = false;
+            }
+            call.resolve();
             }
         });
     }
@@ -285,6 +340,27 @@ public class WebviewOverlayPlugin extends Plugin {
             public void run() {
                 if (webView != null) {
                     webView.reload();
+                }
+                call.success();
+            }
+        });
+    }
+
+    @PluginMethod()
+    public void handleNavigationEvent(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null && targetUrl != null) {
+                    if (call.getBoolean("allow")) {
+                        loadNext = true;
+
+                        webView.loadUrl(targetUrl);
+                    }
+                    else {
+                        notifyListeners("pageLoaded", new JSObject());
+                    }
+                    targetUrl = null;
                 }
                 call.success();
             }

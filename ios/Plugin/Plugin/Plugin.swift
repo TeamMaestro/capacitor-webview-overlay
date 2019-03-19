@@ -12,6 +12,8 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     var openNewWindow: Bool = false
     
+    var currentUrl: URL?
+    
     init(_ plugin: WebviewOverlayPlugin, configuration: WKWebViewConfiguration) {
         super.init(nibName: "WebviewOverlay", bundle: nil)
         self.plugin = plugin
@@ -36,6 +38,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     }
     
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        currentUrl = webView.url
         view.isHidden = plugin.hidden
         if (plugin.hidden) {
             plugin.notifyListeners("updateSnapshot", data: [:])
@@ -82,7 +85,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
             plugin.notifyListeners("navigationHandler", data: [
                 "url": navigationResponse.response.url?.absoluteString ?? "",
                 "newWindow": self.openNewWindow,
-                "sameHost": webView.url?.host == navigationResponse.response.url?.host
+                "sameHost": currentUrl?.host == navigationResponse.response.url?.host
             ])
             self.openNewWindow = false
         }

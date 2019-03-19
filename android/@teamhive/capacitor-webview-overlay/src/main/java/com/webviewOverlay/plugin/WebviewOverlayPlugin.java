@@ -33,9 +33,7 @@ public class WebviewOverlayPlugin extends Plugin {
     private float x;
     private float y;
 
-    private boolean openNewWindow = false;
     private String targetUrl;
-    private boolean loadNext = false;
 
     @Override
     public void load() {
@@ -83,8 +81,15 @@ public class WebviewOverlayPlugin extends Plugin {
                         targetWebView.setWebViewClient(new WebViewClient() {
                             @Override
                             public void onLoadResource(WebView view, String url) {
-                                openNewWindow = true;
-                                webView.loadUrl(url);
+                                if (hasListeners("navigationHandler")) {
+                                    handleNavigation(url, true);
+                                    JSObject progressValue = new JSObject();
+                                    progressValue.put("value", 0.1);
+                                    notifyListeners("progress", progressValue);
+                                }
+                                else {
+                                    webView.loadUrl(url);
+                                }
                                 targetWebView.removeAllViews();
                                 targetWebView.destroy();
                             }
@@ -124,31 +129,13 @@ public class WebviewOverlayPlugin extends Plugin {
                     }
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        targetUrl = url;
-                        if (hasListeners("navigationHandler") && !loadNext) {
-                            boolean sameHost;
-                            try {
-                                URL currentUrl = new URL(webView.getUrl());
-                                URL targetUrl = new URL(url);
-                                sameHost = currentUrl.getHost() == targetUrl.getHost();
-                            }
-                            catch(MalformedURLException e) {
-                                sameHost = true;
-                            }
 
-                            JSObject navigationHandlerValue = new JSObject();
-                            navigationHandlerValue.put("url", url);
-                            navigationHandlerValue.put("newWindow", openNewWindow);
-                            navigationHandlerValue.put("sameHost", sameHost);
-
-                            notifyListeners("navigationHandler", navigationHandlerValue);
-                            openNewWindow = false;
+                        if (hasListeners("navigationHandler")) {
+                            handleNavigation(url, false);
                             return true;
                         }
                         else {
-                            openNewWindow = false;
                             targetUrl = null;
-                            loadNext = false;
                             return false;
                         }
                     }
@@ -183,6 +170,26 @@ public class WebviewOverlayPlugin extends Plugin {
                 webView.loadUrl(urlString);
             }
         });
+    }
+
+    private void handleNavigation(String url, Boolean newWindow) {
+        targetUrl = url;
+        boolean sameHost;
+        try {
+            URL currentUrl = new URL(webView.getUrl());
+            URL targetUrl = new URL(url);
+            sameHost = currentUrl.getHost() == targetUrl.getHost();
+        }
+        catch(MalformedURLException e) {
+            sameHost = true;
+        }
+
+        JSObject navigationHandlerValue = new JSObject();
+        navigationHandlerValue.put("url", url);
+        navigationHandlerValue.put("newWindow", newWindow);
+        navigationHandlerValue.put("sameHost", sameHost);
+
+        notifyListeners("navigationHandler", navigationHandlerValue);
     }
 
     @PluginMethod()
@@ -356,8 +363,6 @@ public class WebviewOverlayPlugin extends Plugin {
             public void run() {
                 if (webView != null && targetUrl != null) {
                     if (call.getBoolean("allow")) {
-                        loadNext = true;
-
                         webView.loadUrl(targetUrl);
                     }
                     else {

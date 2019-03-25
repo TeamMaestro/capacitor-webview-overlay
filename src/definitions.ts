@@ -18,6 +18,11 @@ export interface IWebviewOverlayPlugin {
     close(): Promise<void>;
 
     /**
+     * Load a url in the webview.
+     */
+    loadUrl(options: {url: string}): Promise<void>;
+
+    /**
      * Get snapshot image
      */
     getSnapshot(): Promise<{src: string}>;

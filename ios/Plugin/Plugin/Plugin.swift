@@ -14,6 +14,8 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     
     var currentUrl: URL?
     
+    var loadUrlCall: CAPPluginCall?
+    
     init(_ plugin: WebviewOverlayPlugin, configuration: WKWebViewConfiguration) {
         super.init(nibName: "WebviewOverlay", bundle: nil)
         self.plugin = plugin
@@ -42,6 +44,10 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         view.isHidden = plugin.hidden
         if (plugin.hidden) {
             plugin.notifyListeners("updateSnapshot", data: [:])
+        }
+        if (self.loadUrlCall != nil) {
+            self.loadUrlCall?.success()
+            self.loadUrlCall = nil
         }
         plugin.notifyListeners("pageLoaded", data: [:])
         
@@ -166,6 +172,8 @@ public class WebviewOverlayPlugin: CAPPlugin {
             }
 
             let url = URL(string: urlString)
+            
+            self.hidden = false
             
             self.width = CGFloat(call.getFloat("width") ?? 0)
             self.height = CGFloat(call.getFloat("height") ?? 0)
@@ -309,6 +317,16 @@ public class WebviewOverlayPlugin: CAPPlugin {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.webview?.reload()
                 call.success()
+            }
+        }
+    }
+    
+    @objc func loadUrl(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if (self.webviewOverlay != nil) {
+                let url = call.getString("url") ?? ""
+                self.webviewOverlay.loadUrlCall = call
+                self.webviewOverlay.loadUrl(URL(string: url)!)
             }
         }
     }

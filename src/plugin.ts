@@ -158,11 +158,17 @@ export class WebviewOverlay {
     goBack() {
         WebviewOverlayPlugin.goBack();
     }
+
     goForward() {
         WebviewOverlayPlugin.goForward();
     }
+
     reload() {
         WebviewOverlayPlugin.reload();
+    }
+
+    loadUrl(url: string) {
+        return WebviewOverlayPlugin.loadUrl({url});
     }
 
 }

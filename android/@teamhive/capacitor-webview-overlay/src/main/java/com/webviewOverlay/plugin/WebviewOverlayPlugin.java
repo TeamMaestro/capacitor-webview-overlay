@@ -35,6 +35,8 @@ public class WebviewOverlayPlugin extends Plugin {
 
     private String targetUrl;
 
+    private PluginCall loadUrlCall;
+
     @Override
     public void load() {
         super.load();
@@ -50,6 +52,7 @@ public class WebviewOverlayPlugin extends Plugin {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                hidden = false;
                 webView = new WebView(getContext());
                 WebSettings settings = webView.getSettings();
                 settings.setAllowContentAccess(true);
@@ -115,16 +118,22 @@ public class WebviewOverlayPlugin extends Plugin {
                     @Override
                     public void onPageFinished(WebView view, String url) {
                         super.onPageFinished(view, url);
-                        if (!javascript.isEmpty() && injectionTime == 1) {
-                            webView.evaluateJavascript(javascript, null);
-                        }
-                        if (!hidden) {
-                            webView.setVisibility(View.VISIBLE);
-                        } else {
-                            webView.setVisibility(View.INVISIBLE);
-                            notifyListeners("updateSnapshot", new JSObject());
+                        if (webView != null) {
+                            if (!javascript.isEmpty() && injectionTime == 1) {
+                                webView.evaluateJavascript(javascript, null);
+                            }
+                            if (!hidden) {
+                                webView.setVisibility(View.VISIBLE);
+                            } else {
+                                webView.setVisibility(View.INVISIBLE);
+                                notifyListeners("updateSnapshot", new JSObject());
+                            }
                         }
 
+                        if (loadUrlCall != null) {
+                            loadUrlCall.success();
+                            loadUrlCall = null;
+                        }
                         notifyListeners("pageLoaded", new JSObject());
                     }
                     @Override
@@ -352,6 +361,19 @@ public class WebviewOverlayPlugin extends Plugin {
                     webView.reload();
                 }
                 call.success();
+            }
+        });
+    }
+
+    @PluginMethod()
+    public void loadUrl(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+            if (call.getString("url") != null) {
+                webView.loadUrl(call.getString("url"));
+                loadUrlCall = call;
+            }
             }
         });
     }

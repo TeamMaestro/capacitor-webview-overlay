@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.os.Message;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -18,11 +19,40 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import android.util.Base64;
 
+import fi.iki.elonen.NanoHTTPD;
+
+class MyHTTPD extends NanoHTTPD {
+    public static final int PORT = 8080;
+
+    public MyHTTPD() throws IOException {
+        super(PORT);
+    }
+
+    @Override
+    public Response serve(IHTTPSession session) {
+        String uri = session.getUri();
+
+        try {
+            File file = new File(uri);
+            FileInputStream fis = new FileInputStream(file);
+
+            String extension = MimeTypeMap.getFileExtensionFromUrl(uri);
+            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+
+            return newChunkedResponse(Response.Status.OK, mimeType, fis);
+
+        } catch(Exception e) {}
+
+        return null;
+    }
+}
 
 @NativePlugin()
 public class WebviewOverlayPlugin extends Plugin {
@@ -36,6 +66,8 @@ public class WebviewOverlayPlugin extends Plugin {
     private String targetUrl;
 
     private PluginCall loadUrlCall;
+
+    private MyHTTPD server;
 
     @Override
     public void load() {
@@ -58,6 +90,7 @@ public class WebviewOverlayPlugin extends Plugin {
                 settings.setAllowContentAccess(true);
                 settings.setAllowFileAccess(true);
                 settings.setAllowFileAccessFromFileURLs(true);
+                settings.setAllowUniversalAccessFromFileURLs(true);
                 settings.setJavaScriptEnabled(true);
                 settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                 settings.setDomStorageEnabled(true);
@@ -176,7 +209,19 @@ public class WebviewOverlayPlugin extends Plugin {
 
                 ((ViewGroup) getBridge().getWebView().getParent()).addView(webView);
 
-                webView.loadUrl(urlString);
+
+                if (urlString.contains("file:")) {
+                    try {
+                        server = new MyHTTPD();
+                        server.start();
+                    } catch (Exception e) {}
+
+                    webView.loadUrl(urlString.replace("file://", "http://localhost:8080"));
+                }
+                else {
+                    webView.loadUrl(urlString);
+                }
+
             }
         });
     }
@@ -187,18 +232,16 @@ public class WebviewOverlayPlugin extends Plugin {
         try {
             URL currentUrl = new URL(webView.getUrl());
             URL targetUrl = new URL(url);
-            sameHost = currentUrl.getHost() == targetUrl.getHost();
-        }
-        catch(MalformedURLException e) {
-            sameHost = true;
-        }
+            sameHost = currentUrl.getHost().equals(targetUrl.getHost());
 
-        JSObject navigationHandlerValue = new JSObject();
-        navigationHandlerValue.put("url", url);
-        navigationHandlerValue.put("newWindow", newWindow);
-        navigationHandlerValue.put("sameHost", sameHost);
+            JSObject navigationHandlerValue = new JSObject();
+            navigationHandlerValue.put("url", url);
+            navigationHandlerValue.put("newWindow", newWindow);
+            navigationHandlerValue.put("sameHost", sameHost);
 
-        notifyListeners("navigationHandler", navigationHandlerValue);
+            notifyListeners("navigationHandler", navigationHandlerValue);
+        }
+        catch(MalformedURLException e) { }
     }
 
     @PluginMethod()
@@ -207,6 +250,9 @@ public class WebviewOverlayPlugin extends Plugin {
             @Override
             public void run() {
             if (webView != null) {
+                if (server != null && server.isAlive()) {
+                    server.stop();
+                }
                 ViewGroup rootGroup = ((ViewGroup) getBridge().getWebView().getParent());
                 int count = rootGroup.getChildCount();
                 if (count > 1) {
@@ -282,7 +328,7 @@ public class WebviewOverlayPlugin extends Plugin {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Bitmap bm = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                    Bitmap bm = Bitmap.createBitmap(width == 0 ? 1 : width, height == 0 ? 1 : height, Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bm);
                     getWebView().draw(canvas);
                     ByteArrayOutputStream os = new ByteArrayOutputStream();

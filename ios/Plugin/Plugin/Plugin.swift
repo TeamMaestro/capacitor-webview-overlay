@@ -1,5 +1,6 @@
 import Foundation
 import Capacitor
+import GCDWebServer
 
 @available(iOS 11.0, *)
 class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
@@ -7,6 +8,8 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     var webview: WKWebView?
     var plugin: WebviewOverlayPlugin!
     var configuration: WKWebViewConfiguration!
+    
+    var webServer: GCDWebServer?
     
     var currentDecisionHandler: ((WKNavigationResponsePolicy) -> Void)? = nil
     
@@ -101,9 +104,29 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         }
     }
     
+    public func clearWebServer() {
+        if (self.webServer != nil) {
+            if (self.webServer?.isRunning == true) {
+                self.webServer?.stop()
+            }
+            self.webServer = nil
+        }
+    }
+    
     public func loadUrl(_ url: URL) {
         if url.absoluteString.hasPrefix("file") {
-            self.webview?.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            self.clearWebServer()
+            self.webServer = GCDWebServer()
+            self.webServer?.addGETHandler(forBasePath: "/", directoryPath: url.deletingLastPathComponent().path, indexFilename: nil, cacheAge: 3600, allowRangeRequests: true)
+            do {
+                try self.webServer?.start(options: [
+                    GCDWebServerOption_Port: 8080,
+                    GCDWebServerOption_BindToLocalhost: true
+                ])
+            } catch {
+                print(error)
+            }
+            self.webview?.load(URLRequest(url: (self.webServer?.serverURL?.appendingPathComponent(url.lastPathComponent))!))
         }
         else {
             self.webview?.load(URLRequest(url: url))
@@ -195,6 +218,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.view.removeFromSuperview()
                 self.webviewOverlay.removeFromParent()
+                self.webviewOverlay.clearWebServer()
                 self.webviewOverlay = nil
                 self.hidden = false
             }

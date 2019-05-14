@@ -9,6 +9,9 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
     var plugin: WebviewOverlayPlugin!
     var configuration: WKWebViewConfiguration!
     
+    var closeFullscreenButton: UIButton!
+    var topSafeArea: CGFloat!
+    
     var webServer: GCDWebServer?
     
     var currentDecisionHandler: ((WKNavigationResponsePolicy) -> Void)? = nil
@@ -39,7 +42,38 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         self.webview?.scrollView.bounces = false
         self.webview?.allowsBackForwardNavigationGestures = true
         
+        self.webview?.isOpaque = false
+        
+        let button = UIButton(frame: CGRect(x: UIScreen.main.bounds.width - 60, y: 20, width: 40, height: 40))
+        let image = UIImage(named: "icon", in: Bundle(for: NSClassFromString("WebviewOverlayPlugin")!), compatibleWith: nil)
+        button.setImage(image, for: .normal)
+        button.isHidden = true;
+        button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        button.adjustsImageWhenHighlighted = false
+        button.layer.cornerRadius = 0.5 * button.bounds.size.width
+        button.addTarget(self, action: #selector(buttonAction), for: .touchUpInside)
+        
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: UIBlurEffect.Style.regular))
+        blur.frame = button.bounds
+        blur.layer.cornerRadius = 0.5 * button.bounds.size.width
+        blur.clipsToBounds = true
+        blur.isUserInteractionEnabled = false
+        button.insertSubview(blur, at: 0)
+        button.bringSubviewToFront(button.imageView!)
+        
+        self.closeFullscreenButton = button
+        view.addSubview(self.closeFullscreenButton)
+        
         self.webview?.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        self.topSafeArea = view.safeAreaInsets.top
+        self.closeFullscreenButton.frame = CGRect(x: UIScreen.main.bounds.width - 60, y: self.topSafeArea + 20, width: 40, height: 40)
+    }
+    
+    @objc func buttonAction(sender: UIButton!) {
+        plugin.toggleFullscreen()
     }
     
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -152,6 +186,8 @@ public class WebviewOverlayPlugin: CAPPlugin {
     
     var hidden: Bool = false
     
+    var fullscreen: Bool = false
+    
     var webviewOverlay: WebviewOverlay!
     
     /**
@@ -260,8 +296,19 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.height = CGFloat(call.getFloat("height") ?? 0)
             self.x = CGFloat(call.getFloat("x") ?? 0)
             self.y = CGFloat(call.getFloat("y") ?? 0)
-            let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
-            self.webviewOverlay.view.frame = rect
+            
+            if (!self.fullscreen) {
+                let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
+                self.webviewOverlay.view.frame = rect
+            }
+            else {
+                let width = UIScreen.main.bounds.width
+                let height = UIScreen.main.bounds.height
+                let rect = CGRect(x: 0, y: 0, width: width, height: height)
+                self.webviewOverlay.view.frame = rect
+            }
+            
+            self.webviewOverlay.closeFullscreenButton.frame = CGRect(x: UIScreen.main.bounds.width - 60, y: self.webviewOverlay.topSafeArea + 20, width: 40, height: 40)
             
             if (self.hidden) {
                 self.notifyListeners("updateSnapshot", data: [:])
@@ -314,6 +361,30 @@ public class WebviewOverlayPlugin: CAPPlugin {
             }
             else {
                 call.resolve(["result": ""])
+            }
+        }
+    }
+    
+    @objc func toggleFullscreen(_ call: CAPPluginCall? = nil) {
+        DispatchQueue.main.async {
+            if (self.webviewOverlay != nil) {
+                if (self.fullscreen) {
+                    let rect = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
+                    self.webviewOverlay.view.frame = rect
+                    self.fullscreen = false
+                    self.webviewOverlay.closeFullscreenButton.isHidden = true
+                }
+                else {
+                    let width = UIScreen.main.bounds.width
+                    let height = UIScreen.main.bounds.height
+                    let rect = CGRect(x: 0, y: 0, width: width, height: height)
+                    self.webviewOverlay.view.frame = rect
+                    self.fullscreen = true
+                    self.webviewOverlay.closeFullscreenButton.isHidden = false
+                }
+                if (call != nil) {
+                    call!.success()
+                }
             }
         }
     }

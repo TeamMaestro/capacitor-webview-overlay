@@ -155,6 +155,10 @@ export class WebviewOverlay {
         });
     }
 
+    toggleFullscreen() {
+        WebviewOverlayPlugin.toggleFullscreen();
+    }
+
     goBack() {
         WebviewOverlayPlugin.goBack();
     }

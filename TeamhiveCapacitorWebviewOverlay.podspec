@@ -11,4 +11,5 @@
     s.ios.deployment_target  = '11.0'
     s.dependency 'Capacitor'
     s.dependency 'GCDWebServer'
+    s.resources = 'ios/Plugin/Resources/*.png'
   end

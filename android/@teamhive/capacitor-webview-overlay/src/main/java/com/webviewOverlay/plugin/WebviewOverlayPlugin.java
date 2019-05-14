@@ -1,8 +1,11 @@
 package com.webviewOverlay.plugin;
 import android.annotation.SuppressLint;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.os.Message;
+import android.support.design.widget.FloatingActionButton;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
@@ -17,6 +20,7 @@ import com.getcapacitor.NativePlugin;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.webviewOverlay.plugin.capacitorwebviewoverlay.R;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -58,6 +62,8 @@ class MyHTTPD extends NanoHTTPD {
 public class WebviewOverlayPlugin extends Plugin {
     private WebView webView;
     private boolean hidden = false;
+    private boolean fullscreen = false;
+    private FloatingActionButton closeFullscreenButton;
     private int width;
     private int height;
     private float x;
@@ -102,6 +108,22 @@ public class WebviewOverlayPlugin extends Plugin {
                 final String javascript = call.getString("javascript", "");
 
                 final int injectionTime = call.getInt("injectionTime", 0);
+
+                closeFullscreenButton = new FloatingActionButton(getContext());
+                closeFullscreenButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#626272")));
+                closeFullscreenButton.setSize(FloatingActionButton.SIZE_MINI);
+                closeFullscreenButton.setImageResource(R.drawable.icon);
+                closeFullscreenButton.setX(getPixels(10));
+                closeFullscreenButton.setY(getPixels(10));
+                closeFullscreenButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        toggleFullscreen(null);
+                    }
+                });
+                closeFullscreenButton.setVisibility(View.GONE);
+                webView.addView(closeFullscreenButton);
+
 
                 webView.setWebChromeClient(new WebChromeClient() {
                     @Override
@@ -209,7 +231,6 @@ public class WebviewOverlayPlugin extends Plugin {
 
                 ((ViewGroup) getBridge().getWebView().getParent()).addView(webView);
 
-
                 if (urlString.contains("file:")) {
                     try {
                         server = new MyHTTPD();
@@ -303,12 +324,24 @@ public class WebviewOverlayPlugin extends Plugin {
                 height = (int) getPixels(call.getInt("height", 1));
                 x = getPixels(call.getInt("x", 0));
                 y = getPixels(call.getInt("y", 0));
-                ViewGroup.LayoutParams params = webView.getLayoutParams();
-                params.width = width;
-                params.height = height;
-                webView.setX(x);
-                webView.setY(y);
-                webView.requestLayout();
+
+                if (!fullscreen) {
+                    ViewGroup.LayoutParams params = webView.getLayoutParams();
+                    params.width = width;
+                    params.height = height;
+                    webView.setX(x);
+                    webView.setY(y);
+                    webView.requestLayout();
+                }
+                else {
+                    ViewGroup.LayoutParams params = webView.getLayoutParams();
+                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                    webView.setX(0);
+                    webView.setY(0);
+                    webView.requestLayout();
+                }
+
                 if (hidden) {
                     notifyListeners("updateSnapshot", new JSObject());
                 }
@@ -323,11 +356,11 @@ public class WebviewOverlayPlugin extends Plugin {
 
     @PluginMethod()
     public void getSnapshot(final PluginCall call) {
-        final JSObject object = new JSObject();
-        if (webView != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final JSObject object = new JSObject();
+                if (webView != null) {
                     Bitmap bm = Bitmap.createBitmap(width == 0 ? 1 : width, height == 0 ? 1 : height, Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bm);
                     getWebView().draw(canvas);
@@ -337,12 +370,12 @@ public class WebviewOverlayPlugin extends Plugin {
                     String src = Base64.encodeToString(byteArray, Base64.DEFAULT);
                     object.put("src", src);
                     call.resolve(object);
+                } else {
+                    object.put("src", "");
+                    call.resolve(object);
                 }
-            });
-        } else {
-            object.put("src", "");
-            call.resolve(object);
-        }
+            }
+        });
     }
 
     @PluginMethod()
@@ -370,6 +403,40 @@ public class WebviewOverlayPlugin extends Plugin {
                 }
             });
         }
+    }
+
+    @PluginMethod()
+    public void toggleFullscreen(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    if (fullscreen) {
+                        ViewGroup.LayoutParams params = webView.getLayoutParams();
+                        params.width = width;
+                        params.height = height;
+                        webView.setX(x);
+                        webView.setY(y);
+                        webView.requestLayout();
+                        fullscreen = false;
+                        closeFullscreenButton.setVisibility(View.GONE);
+                    }
+                    else {
+                        ViewGroup.LayoutParams params = webView.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                        webView.setX(0);
+                        webView.setY(0);
+                        webView.requestLayout();
+                        fullscreen = true;
+                        closeFullscreenButton.setVisibility(View.VISIBLE);
+                    }
+                }
+                if (call != null) {
+                    call.success();
+                }
+            }
+        });
     }
 
     @PluginMethod()

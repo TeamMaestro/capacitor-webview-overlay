@@ -13,7 +13,7 @@ export interface WebviewOverlayOpenOptions {
     script?: {
         javascript: string;
         injectionTime?: ScriptInjectionTime;
-    } 
+    }
 
     /**
      * The element to open the webview in place of. The webview will open with the same dimensions and fixed position on screen.
@@ -46,7 +46,7 @@ export class WebviewOverlay {
                 this.toggleSnapshot(true);
             }, 100)
         });
-        
+
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const _entry of entries) {
                 const boundingBox = options.element.getBoundingClientRect() as DOMRect;
@@ -55,7 +55,7 @@ export class WebviewOverlay {
                     height: Math.round(boundingBox.height),
                     x: Math.round(boundingBox.x),
                     y: Math.round(boundingBox.y)
-                });    
+                });
             }
         });
         this.resizeObserver.observe(this.element);
@@ -95,30 +95,30 @@ export class WebviewOverlay {
             if (snapshotVisible) {
                 if (snapshot) {
                     const buffer = await (await fetch('data:image/jpeg;base64,' + snapshot)).arrayBuffer();
-                    const blob = new Blob([buffer], {type: 'image/jpeg'});
+                    const blob = new Blob([buffer], { type: 'image/jpeg' });
                     const blobUrl = URL.createObjectURL(blob);
                     const img = new Image();
                     img.onload = async () => {
                         if (this.element && this.element.style) {
                             this.element.style.backgroundImage = `url(${blobUrl})`;
                         }
-                        setTimeout(async() => {
-                            await WebviewOverlayPlugin.hide();    
+                        setTimeout(async () => {
+                            await WebviewOverlayPlugin.hide();
                             resolve();
                         }, 25)
                     };
                     img.src = blobUrl;
                 }
                 else {
-                    if(this.element && this.element.style) {
+                    if (this.element && this.element.style) {
                         this.element.style.backgroundImage = `none`;
                     }
-                    await WebviewOverlayPlugin.hide(); 
+                    await WebviewOverlayPlugin.hide();
                     resolve();
                 }
             }
             else {
-                if(this.element && this.element.style) {
+                if (this.element && this.element.style) {
                     this.element.style.backgroundImage = `none`;
                 }
                 await WebviewOverlayPlugin.show();
@@ -147,11 +147,11 @@ export class WebviewOverlay {
         sameHost: boolean,
         complete: (allow: boolean) => void
     }) => void) {
-        this.navigationHandlerEvent = WebviewOverlayPlugin.addListener('navigationHandler', (event) => {
+        this.navigationHandlerEvent = WebviewOverlayPlugin.addListener('navigationHandler', (event: any) => {
             const complete = (allow: boolean) => {
-                WebviewOverlayPlugin.handleNavigationEvent({allow});
+                WebviewOverlayPlugin.handleNavigationEvent({ allow });
             }
-            listenerFunc({...event, complete});
+            listenerFunc({ ...event, complete });
         });
     }
 
@@ -172,7 +172,7 @@ export class WebviewOverlay {
     }
 
     loadUrl(url: string) {
-        return WebviewOverlayPlugin.loadUrl({url});
+        return WebviewOverlayPlugin.loadUrl({ url });
     }
 
 }

@@ -308,8 +308,10 @@ public class WebviewOverlayPlugin: CAPPlugin {
                 self.webviewOverlay.view.frame = rect
             }
 
-            self.webviewOverlay.closeFullscreenButton.frame = CGRect(x: UIScreen.main.bounds.width - 60, y: self.webviewOverlay.topSafeArea + 20, width: 40, height: 40)
-
+            if (self.webviewOverlay.topSafeArea != nil && self.webviewOverlay.closeFullscreenButton != nil) {
+                self.webviewOverlay.closeFullscreenButton.frame = CGRect(x: UIScreen.main.bounds.width - 60, y: self.webviewOverlay.topSafeArea + 20, width: 40, height: 40)
+            }
+            
             if (self.hidden) {
                 self.notifyListeners("updateSnapshot", data: [:])
             }

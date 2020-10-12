@@ -13,13 +13,16 @@
     "author": "TeamHive",
     "license": "MIT",
     "dependencies": {
-        "@capacitor/core": "latest",
         "resize-observer-polyfill": "^1.5.1"
     },
     "devDependencies": {
-        "typescript": "^2.6.2",
-        "@capacitor/ios": "latest",
-        "@capacitor/android": "latest"
+        "typescript": "~3.8.3",
+        "@capacitor/core": "^2.4.2",
+        "@capacitor/ios": "^2.4.2",
+        "@capacitor/android": "^2.4.2"
+    },
+    "peerDependencies": {
+        "@capacitor/core": "^2.4.2"
     },
     "files": [
         "dist/",

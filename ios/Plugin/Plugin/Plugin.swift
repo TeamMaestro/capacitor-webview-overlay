@@ -28,6 +28,10 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         self.configuration = configuration
     }
 
+    deinit {
+        self.webview?.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
+    }
+
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }

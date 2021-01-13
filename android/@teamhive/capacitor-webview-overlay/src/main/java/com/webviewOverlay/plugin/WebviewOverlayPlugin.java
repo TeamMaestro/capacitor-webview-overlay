@@ -242,7 +242,7 @@ public class WebviewOverlayPlugin extends Plugin {
                 else {
                     webView.loadUrl(urlString);
                 }
-
+              call.resolve();
             }
         });
     }

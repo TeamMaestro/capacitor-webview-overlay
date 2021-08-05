@@ -1,8 +1,9 @@
-import { Plugins, PluginListenerHandle } from '@capacitor/core';
-import { ScriptInjectionTime } from './definitions';
-const { WebviewOverlayPlugin } = Plugins;
+import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
+import { IWebviewOverlayPlugin, ScriptInjectionTime } from './definitions';
 
 import ResizeObserver from 'resize-observer-polyfill';
+
+const WebviewOverlayPlugin = registerPlugin<IWebviewOverlayPlugin>('WebviewOverlayPlugin');
 
 export interface WebviewOverlayOpenOptions {
     /**
@@ -22,7 +23,7 @@ export interface WebviewOverlayOpenOptions {
     element: HTMLElement;
 }
 
-export class WebviewOverlay {
+class WebviewOverlayClass {
 
     element: HTMLElement;
     updateSnapshotEvent: PluginListenerHandle;
@@ -176,3 +177,5 @@ export class WebviewOverlay {
     }
 
 }
+
+export const WebviewOverlay = new WebviewOverlayClass();

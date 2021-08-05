@@ -1,10 +1,4 @@
-import { PluginListenerHandle } from "@capacitor/core";
-
-declare global {
-    interface PluginRegistry {
-        WebviewOverlayPlugin?: IWebviewOverlayPlugin;
-    }
-}
+import { PluginListenerHandle } from '@capacitor/core';
 
 export interface IWebviewOverlayPlugin {
     /**

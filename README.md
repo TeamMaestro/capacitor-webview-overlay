@@ -1,41 +1,22 @@
-# Capacitor Webview Overlay Plugin
+# @teamhive/capacitor-webview-overlay
 
-[![npm](https://img.shields.io/npm/v/@teamhive/capacitor-webview-overlay.svg)](https://www.npmjs.com/package/@teamhive/capacitor-webview-overlay)
+Webview Overlay
 
-[Capacitor](https://capacitor.ionicframework.com/) plugin to overlay native webviews on top of your app. Supports iOS and Android.
+## Install
 
-## Installation
-
-`npm i @teamhive/capacitor-webview-overlay`
-
-### Android
-
-To use the pluign on Android, you must register it in `MainActivity.java`.
-```java
-// Other imports...
-import com.webviewOverlay.plugin.WebviewOverlayPlugin;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Initializes the Bridge
-        this.init(savedInstanceState, new ArrayList<Class<? extends Plugin>>() {{
-            // Additional plugins you've installed go here
-            add(WebviewOverlayPlugin.class);
-        }});
-    }
-}
+```bash
+npm install @teamhive/capacitor-webview-overlay
+npx cap sync
 ```
 
-### iOS
+## API
 
-No additional configutation needed.
+<docgen-index></docgen-index>
 
-### Web/PWA
-
-No implementation provided.
+<docgen-api>
+<!-- run docgen to generate docs from the source -->
+<!-- More info: https://github.com/ionic-team/capacitor-docgen -->
+</docgen-api>
 
 ## Usage
 

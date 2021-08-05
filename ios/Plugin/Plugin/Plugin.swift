@@ -87,7 +87,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
             plugin.notifyListeners("updateSnapshot", data: [:])
         }
         if (self.loadUrlCall != nil) {
-            self.loadUrlCall?.success()
+            self.loadUrlCall?.resolve()
             self.loadUrlCall = nil
         }
         plugin.notifyListeners("pageLoaded", data: [:])
@@ -230,7 +230,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.webviewOverlay = WebviewOverlay(self, configuration: webConfiguration)
 
             guard let urlString = call.getString("url") else {
-                call.error("Must provide a URL to open")
+                call.reject("Must provide a URL to open")
                 return
             }
 
@@ -244,10 +244,10 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.y = CGFloat(call.getFloat("y") ?? 0)
 
             self.webviewOverlay.view.isHidden = true
-            self.bridge.viewController.addChild(self.webviewOverlay)
-            self.bridge.viewController.view.addSubview(self.webviewOverlay.view)
+            self.bridge?.viewController?.addChild(self.webviewOverlay)
+            self.bridge?.viewController?.view.addSubview(self.webviewOverlay.view)
             self.webviewOverlay.view.frame = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
-            self.webviewOverlay.didMove(toParent: self.bridge.viewController)
+            self.webviewOverlay.didMove(toParent: self.bridge?.viewController)
 
             self.webviewOverlay.loadUrl(url!)
         }
@@ -319,7 +319,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             if (self.hidden) {
                 self.notifyListeners("updateSnapshot", data: [:])
             }
-            call.success()
+            call.resolve()
         }
     }
 
@@ -329,7 +329,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.view.isHidden = false
             }
-            call.success()
+            call.resolve()
         }
     }
 
@@ -339,14 +339,14 @@ public class WebviewOverlayPlugin: CAPPlugin {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.view.isHidden = true
             }
-            call.success()
+            call.resolve()
         }
     }
 
     @objc func evaluateJavaScript(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard let javascript = call.getString("javascript") else {
-                call.error("Must provide javascript string")
+                call.reject("Must provide javascript string")
                 return
             }
             if (self.webviewOverlay != nil) {
@@ -354,7 +354,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                     func eval(completionHandler: @escaping (_ response: String?) -> Void) {
                         self.webviewOverlay.webview?.evaluateJavaScript(String(javascript)) { (value, error) in
                             if error != nil {
-                                call.error(error?.localizedDescription ?? "unknown error")
+                                call.reject(error?.localizedDescription ?? "unknown error")
                             }
                             else if let valueName = value as? String {
                                 completionHandler(valueName)
@@ -394,7 +394,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                     self.webviewOverlay.closeFullscreenButton.isHidden = false
                 }
                 if (call != nil) {
-                    call!.success()
+                    call!.resolve()
                 }
             }
         }
@@ -404,7 +404,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.webview?.goBack()
-                call.success()
+                call.resolve()
             }
         }
     }
@@ -413,7 +413,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.webview?.goForward()
-                call.success()
+                call.resolve()
             }
         }
     }
@@ -422,7 +422,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.webview?.reload()
-                call.success()
+                call.resolve()
             }
         }
     }
@@ -447,7 +447,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                 self.notifyListeners("pageLoaded", data: [:])
             }
             self.webviewOverlay.currentDecisionHandler = nil
-            call.success()
+            call.resolve()
         }
     }
 }

@@ -158,7 +158,6 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
             self.webServer?.addGETHandler(forBasePath: "/", directoryPath: url.deletingLastPathComponent().path, indexFilename: nil, cacheAge: 3600, allowRangeRequests: true)
             do {
                 try self.webServer?.start(options: [
-                    GCDWebServerOption_Port: 8080,
                     GCDWebServerOption_BindToLocalhost: true
                 ])
             } catch {

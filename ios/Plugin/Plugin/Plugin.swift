@@ -204,6 +204,10 @@ public class WebviewOverlayPlugin: CAPPlugin {
             webConfiguration.allowsInlineMediaPlayback = true
             webConfiguration.mediaTypesRequiringUserActionForPlayback = []
             webConfiguration.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+            let userAgent = call.getString("userAgent");
+            if (userAgent) {
+                webConfiguration.applicationNameForUserAgent = "\(webConfiguration.applicationNameForUserAgent), \(userAgent)";
+            }
 
             // Content controller
             let javascript = call.getString("javascript") ?? ""

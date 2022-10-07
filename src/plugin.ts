@@ -21,6 +21,11 @@ export interface WebviewOverlayOpenOptions {
      * When toggled off, the element will have a background image with the webview snapshot.
      */
     element: HTMLElement;
+
+    /**
+     * Allow use append the string to the end of the user agent.
+     */
+    userAgent?: string;
 }
 
 class WebviewOverlayClass {
@@ -64,6 +69,7 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.open({
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
+            userAgent: options.userAgent ? options.userAgent : '',
             injectionTime: options.script ? (options.script.injectionTime || ScriptInjectionTime.atDocumentStart) : ScriptInjectionTime.atDocumentStart,
             width: Math.round(boundingBox.width),
             height: Math.round(boundingBox.height),

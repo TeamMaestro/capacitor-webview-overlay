@@ -46,6 +46,7 @@ interface OpenOptions extends Dimensions {
 
     javascript?: string;
     injectionTime?: ScriptInjectionTime;
+    userAgent?: string;
 }
 
 interface Dimensions {

@@ -1,6 +1,6 @@
 {
     "name": "@teamhive/capacitor-webview-overlay",
-    "version": "2.0.2",
+    "version": "3.0.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -46,9 +46,9 @@
         "resize-observer-polyfill": "^1.5.1"
     },
     "devDependencies": {
-        "@capacitor/android": "^3.0.0",
-        "@capacitor/core": "^3.0.0",
-        "@capacitor/ios": "^3.0.0",
+        "@capacitor/android": "^4.6.3",
+        "@capacitor/core": "^4.6.3",
+        "@capacitor/ios": "^4.6.3",
         "@ionic/eslint-config": "^0.3.0",
         "@ionic/prettier-config": "^1.0.1",
         "@ionic/swiftlint-config": "^1.1.2",
@@ -61,7 +61,7 @@
         "typescript": "~4.0.3"
     },
     "peerDependencies": {
-        "@capacitor/core": "^3.0.0"
+        "@capacitor/core": "^4.6.3"
     },
     "prettier": "@ionic/prettier-config",
     "swiftlint": "@ionic/swiftlint-config",

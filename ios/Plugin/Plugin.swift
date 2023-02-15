@@ -2,7 +2,6 @@ import Foundation
 import Capacitor
 import GCDWebServer
 
-@available(iOS 11.0, *)
 class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
 
     var webview: WKWebView?
@@ -63,7 +62,7 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
         blur.clipsToBounds = true
         blur.isUserInteractionEnabled = false
         button.insertSubview(blur, at: 0)
-        button.bringSubviewToFront(button.imageView!)
+        button.bringSubview(toFront: button.imageView!)
 
         self.closeFullscreenButton = button
         view.addSubview(self.closeFullscreenButton)
@@ -178,7 +177,6 @@ class WebviewOverlay: UIViewController, WKUIDelegate, WKNavigationDelegate {
 
 }
 
-@available(iOS 11.0, *)
 @objc(WebviewOverlayPlugin)
 public class WebviewOverlayPlugin: CAPPlugin {
 
@@ -243,10 +241,10 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.y = CGFloat(call.getFloat("y") ?? 0)
 
             self.webviewOverlay.view.isHidden = true
-            self.bridge?.viewController?.addChild(self.webviewOverlay)
+            self.bridge?.viewController?.addChildViewController(self.webviewOverlay)
             self.bridge?.viewController?.view.addSubview(self.webviewOverlay.view)
             self.webviewOverlay.view.frame = CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
-            self.webviewOverlay.didMove(toParent: self.bridge?.viewController)
+            self.webviewOverlay.didMove(toParentViewController: self.bridge?.viewController)
 
             self.webviewOverlay.loadUrl(url!)
         }
@@ -256,7 +254,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.view.removeFromSuperview()
-                self.webviewOverlay.removeFromParent()
+                self.webviewOverlay.removeFromParentViewController()
                 self.webviewOverlay.clearWebServer()
                 self.webviewOverlay = nil
                 self.hidden = false
@@ -273,7 +271,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
 
                     self.webviewOverlay.webview?.takeSnapshot(with: nil) {image, error in
                         if let image = image {
-                            guard let jpeg = image.jpegData(compressionQuality: 1) else {
+                            guard let jpeg = UIImageJPEGRepresentation(image, 1) else {
                                 return
                             }
                             let base64String = jpeg.base64EncodedString()

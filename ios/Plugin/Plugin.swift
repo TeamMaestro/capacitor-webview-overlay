@@ -203,7 +203,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
             webConfiguration.mediaTypesRequiringUserActionForPlayback = []
             webConfiguration.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
             let userAgent = call.getString("userAgent");
-            if (userAgent) {
+            if (userAgent != nil) {
                 webConfiguration.applicationNameForUserAgent = "\(webConfiguration.applicationNameForUserAgent), \(userAgent)";
             }
 

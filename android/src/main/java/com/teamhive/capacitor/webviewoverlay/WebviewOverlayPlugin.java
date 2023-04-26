@@ -283,7 +283,7 @@ public class WebviewOverlayPlugin extends Plugin {
                 if (count > 1) {
                     rootGroup.removeView(webView);
                     webView.destroyDrawingCache();
-                    webView.destroy()
+                    webView.destroy();
                     webView = null;
                 }
                 hidden = false;

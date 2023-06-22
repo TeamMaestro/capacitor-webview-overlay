@@ -1,6 +1,6 @@
 {
-    "name": "@teamhive/capacitor-webview-overlay",
-    "version": "2.0.1",
+    "name": "@eonx-com/capacitor-webview-overlay",
+    "version": "5.0.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -61,7 +61,7 @@
         "typescript": "~4.0.3"
     },
     "peerDependencies": {
-        "@capacitor/core": "^3.0.0"
+        "@capacitor/core": "^5.0.0"
     },
     "prettier": "@ionic/prettier-config",
     "swiftlint": "@ionic/swiftlint-config",

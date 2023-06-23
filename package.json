@@ -11,16 +11,16 @@
         "android/build.gradle",
         "dist/",
         "ios/Plugin/",
-        "TeamhiveCapacitorWebviewOverlay.podspec"
+        "EonxComCapacitorWebviewOverlay.podspec"
     ],
     "author": "",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/TeamHive/capacitor-webview-overlay.git"
+        "url": "git+https://github.com/eonx-com/capacitor-webview-overlay.git"
     },
     "bugs": {
-        "url": "https://github.com/TeamHive/capacitor-webview-overlay/issues"
+        "url": "https://github.com/eonx-com/capacitor-webview-overlay/issues"
     },
     "keywords": [
         "capacitor",

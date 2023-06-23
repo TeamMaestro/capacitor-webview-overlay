@@ -1,11 +1,11 @@
-# @teamhive/capacitor-webview-overlay
+# @eonx-com/capacitor-webview-overlay
 
 Webview Overlay
 
 ## Install
 
 ```bash
-npm install @teamhive/capacitor-webview-overlay
+npm install @eonx-com/capacitor-webview-overlay
 npx cap sync
 ```
 

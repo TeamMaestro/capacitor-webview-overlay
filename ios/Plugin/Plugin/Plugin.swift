@@ -250,6 +250,8 @@ public class WebviewOverlayPlugin: CAPPlugin {
             self.webviewOverlay.didMove(toParent: self.bridge?.viewController)
 
             self.webviewOverlay.loadUrl(url!)
+
+            call.resolve()
         }
     }
 
@@ -262,6 +264,7 @@ public class WebviewOverlayPlugin: CAPPlugin {
                 self.webviewOverlay = nil
                 self.hidden = false
             }
+            call.resolve()
         }
     }
 

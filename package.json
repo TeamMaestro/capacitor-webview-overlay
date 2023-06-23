@@ -1,6 +1,6 @@
 {
-    "name": "@teamhive/capacitor-webview-overlay",
-    "version": "2.0.1",
+    "name": "@eonx-com/capacitor-webview-overlay",
+    "version": "5.0.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -11,16 +11,16 @@
         "android/build.gradle",
         "dist/",
         "ios/Plugin/",
-        "TeamhiveCapacitorWebviewOverlay.podspec"
+        "EonxComCapacitorWebviewOverlay.podspec"
     ],
     "author": "",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/TeamHive/capacitor-webview-overlay.git"
+        "url": "git+https://github.com/eonx-com/capacitor-webview-overlay.git"
     },
     "bugs": {
-        "url": "https://github.com/TeamHive/capacitor-webview-overlay/issues"
+        "url": "https://github.com/eonx-com/capacitor-webview-overlay/issues"
     },
     "keywords": [
         "capacitor",
@@ -61,7 +61,7 @@
         "typescript": "~4.0.3"
     },
     "peerDependencies": {
-        "@capacitor/core": "^3.0.0"
+        "@capacitor/core": "^5.0.0"
     },
     "prettier": "@ionic/prettier-config",
     "swiftlint": "@ionic/swiftlint-config",

@@ -1,6 +1,6 @@
 {
     "name": "@eonx-com/capacitor-webview-overlay",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -46,9 +46,9 @@
         "resize-observer-polyfill": "^1.5.1"
     },
     "devDependencies": {
-        "@capacitor/android": "^3.0.0",
-        "@capacitor/core": "^3.0.0",
-        "@capacitor/ios": "^3.0.0",
+        "@capacitor/android": "^5.0.5",
+        "@capacitor/core": "^5.0.5",
+        "@capacitor/ios": "^5.0.5",
         "@ionic/eslint-config": "^0.3.0",
         "@ionic/prettier-config": "^1.0.1",
         "@ionic/swiftlint-config": "^1.1.2",

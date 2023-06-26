@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Message;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
@@ -63,7 +62,6 @@ public class WebviewOverlayPlugin extends Plugin {
     private WebView webView;
     private boolean hidden = false;
     private boolean fullscreen = false;
-    private FloatingActionButton closeFullscreenButton;
     private int width;
     private int height;
     private float x;
@@ -108,21 +106,6 @@ public class WebviewOverlayPlugin extends Plugin {
                 final String javascript = call.getString("javascript", "");
 
                 final int injectionTime = call.getInt("injectionTime", 0);
-
-                closeFullscreenButton = new FloatingActionButton(getContext());
-                closeFullscreenButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#626272")));
-                closeFullscreenButton.setSize(FloatingActionButton.SIZE_MINI);
-                closeFullscreenButton.setImageResource(R.drawable.icon);
-                closeFullscreenButton.setX(getPixels(10));
-                closeFullscreenButton.setY(getPixels(10));
-                closeFullscreenButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        toggleFullscreen(null);
-                    }
-                });
-                closeFullscreenButton.setVisibility(View.GONE);
-                webView.addView(closeFullscreenButton);
 
 
                 webView.setWebChromeClient(new WebChromeClient() {
@@ -419,7 +402,6 @@ public class WebviewOverlayPlugin extends Plugin {
                         webView.setY(y);
                         webView.requestLayout();
                         fullscreen = false;
-                        closeFullscreenButton.setVisibility(View.GONE);
                     }
                     else {
                         ViewGroup.LayoutParams params = webView.getLayoutParams();
@@ -429,7 +411,6 @@ public class WebviewOverlayPlugin extends Plugin {
                         webView.setY(0);
                         webView.requestLayout();
                         fullscreen = true;
-                        closeFullscreenButton.setVisibility(View.VISIBLE);
                     }
                 }
                 if (call != null) {

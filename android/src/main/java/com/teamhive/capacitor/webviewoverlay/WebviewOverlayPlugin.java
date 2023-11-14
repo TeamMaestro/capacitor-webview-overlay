@@ -5,7 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Message;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import android.support.design.widget.FloatingActionButton;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
@@ -20,7 +20,6 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.teamhive.capacitor.webviewoverlay.R;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -125,7 +124,7 @@ public class WebviewOverlayPlugin extends Plugin {
                         toggleFullscreen(null);
                     }
                 });
-                closeFullscreenButton.setVisibility(View.GONE);
+                closeFullscreenButton.setVisibility(0);
                 webView.addView(closeFullscreenButton);
 
 

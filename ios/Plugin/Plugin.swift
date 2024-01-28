@@ -401,12 +401,34 @@ public class WebviewOverlayPlugin: CAPPlugin {
         }
     }
 
+    @objc func canGoBack(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            var result = false
+            if (self.webviewOverlay != nil) {
+               result = self.webviewOverlay.webview?.canGoBack
+            }
+
+            call.resolve(["result": result])
+        }
+    }
+
     @objc func goBack(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             if (self.webviewOverlay != nil) {
                 self.webviewOverlay.webview?.goBack()
                 call.resolve()
             }
+        }
+    }
+
+    @objc func canGoForward(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            var result = false
+            if (self.webviewOverlay != nil) {
+               result = self.webviewOverlay.webview?.canGoForward
+            }
+
+            call.resolve(["result": result])
         }
     }
 

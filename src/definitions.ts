@@ -25,7 +25,11 @@ export interface IWebviewOverlayPlugin {
     hide(): Promise<void>;
 
     toggleFullscreen(): Promise<void>;
+
+    canGoBack(): Promise<{result: boolean}>;
     goBack(): Promise<void>;
+    
+    canGoForward(): Promise<{result: boolean}>;
     goForward(): Promise<void>;
     reload(): Promise<void>;
     

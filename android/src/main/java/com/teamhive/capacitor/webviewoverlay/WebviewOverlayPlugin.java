@@ -446,6 +446,26 @@ public class WebviewOverlayPlugin extends Plugin {
     }
 
     @PluginMethod()
+    public void canGoBack(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                boolean result = false;
+
+                if (webView != null) {
+                    result = webView.canGoBack();
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("result", result);
+
+               call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod()
     public void goBack(final PluginCall call) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -454,6 +474,27 @@ public class WebviewOverlayPlugin extends Plugin {
                     webView.goBack();
                 }
                 call.success();
+            }
+        });
+    }
+
+
+    @PluginMethod()
+    public void canGoForward(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                boolean result = false;
+
+                if (webView != null) {
+                    result = webView.canGoForward();
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("result", result);
+
+               call.resolve(ret);
             }
         });
     }

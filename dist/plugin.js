@@ -138,7 +138,7 @@ var capacitorWebviewOverlay = (function (exports, core, ResizeObserver) {
             return WebviewOverlayPlugin.loadUrl({ url });
         }
     }
-    const WebviewOverlay = new WebviewOverlayClass();
+    const WebviewOverlay = WebviewOverlayClass;
 
     exports.WebviewOverlay = WebviewOverlay;
 

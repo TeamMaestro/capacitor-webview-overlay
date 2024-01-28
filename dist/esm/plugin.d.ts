@@ -49,5 +49,5 @@ declare class WebviewOverlayClass {
     reload(): void;
     loadUrl(url: string): Promise<void>;
 }
-export declare const WebviewOverlay: WebviewOverlayClass;
+export declare const WebviewOverlay: typeof WebviewOverlayClass;
 export {};

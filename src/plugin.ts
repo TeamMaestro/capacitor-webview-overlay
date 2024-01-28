@@ -192,4 +192,4 @@ class WebviewOverlayClass {
 
 }
 
-export const WebviewOverlay =  new WebviewOverlayClass();
+export const WebviewOverlay =  WebviewOverlayClass;

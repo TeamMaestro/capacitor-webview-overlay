@@ -148,7 +148,7 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.loadUrl({ url });
     }
 }
-const WebviewOverlay = new WebviewOverlayClass();
+const WebviewOverlay = WebviewOverlayClass;
 
 exports.WebviewOverlay = WebviewOverlay;
 //# sourceMappingURL=plugin.cjs.js.map

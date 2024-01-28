@@ -42,10 +42,12 @@ declare class WebviewOverlayClass {
         complete: (allow: boolean) => void;
     }) => void): void;
     toggleFullscreen(): void;
+    canGoBack(): Promise<boolean>;
     goBack(): void;
+    canGoForward(): Promise<boolean>;
     goForward(): void;
     reload(): void;
     loadUrl(url: string): Promise<void>;
 }
-export declare const WebviewOverlay: typeof WebviewOverlayClass;
+export declare const WebviewOverlay: WebviewOverlayClass;
 export {};

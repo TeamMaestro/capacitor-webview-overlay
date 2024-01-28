@@ -125,8 +125,14 @@ var capacitorWebviewOverlay = (function (exports, core, ResizeObserver) {
         toggleFullscreen() {
             WebviewOverlayPlugin.toggleFullscreen();
         }
+        async canGoBack() {
+            return (await WebviewOverlayPlugin.canGoBack()).result;
+        }
         goBack() {
             WebviewOverlayPlugin.goBack();
+        }
+        async canGoForward() {
+            return (await WebviewOverlayPlugin.canGoForward()).result;
         }
         goForward() {
             WebviewOverlayPlugin.goForward();
@@ -138,7 +144,7 @@ var capacitorWebviewOverlay = (function (exports, core, ResizeObserver) {
             return WebviewOverlayPlugin.loadUrl({ url });
         }
     }
-    const WebviewOverlay = WebviewOverlayClass;
+    const WebviewOverlay = new WebviewOverlayClass();
 
     exports.WebviewOverlay = WebviewOverlay;
 

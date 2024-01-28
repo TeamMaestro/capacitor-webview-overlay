@@ -129,8 +129,14 @@ class WebviewOverlayClass {
     toggleFullscreen() {
         WebviewOverlayPlugin.toggleFullscreen();
     }
+    async canGoBack() {
+        return (await WebviewOverlayPlugin.canGoBack()).result;
+    }
     goBack() {
         WebviewOverlayPlugin.goBack();
+    }
+    async canGoForward() {
+        return (await WebviewOverlayPlugin.canGoForward()).result;
     }
     goForward() {
         WebviewOverlayPlugin.goForward();
@@ -142,7 +148,7 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.loadUrl({ url });
     }
 }
-const WebviewOverlay = WebviewOverlayClass;
+const WebviewOverlay = new WebviewOverlayClass();
 
 exports.WebviewOverlay = WebviewOverlay;
 //# sourceMappingURL=plugin.cjs.js.map

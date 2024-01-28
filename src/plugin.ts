@@ -166,9 +166,17 @@ class WebviewOverlayClass {
         WebviewOverlayPlugin.toggleFullscreen();
     }
 
+    async canGoBack (): Promise<boolean> {
+       return (await WebviewOverlayPlugin.canGoBack()).result
+    }
+
     goBack() {
         WebviewOverlayPlugin.goBack();
     }
+
+    async canGoForward (): Promise<boolean> {
+        return (await WebviewOverlayPlugin.canGoForward()).result
+     }
 
     goForward() {
         WebviewOverlayPlugin.goForward();
@@ -184,4 +192,4 @@ class WebviewOverlayClass {
 
 }
 
-export const WebviewOverlay =  WebviewOverlayClass;
+export const WebviewOverlay =  new WebviewOverlayClass();

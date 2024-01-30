@@ -147,11 +147,11 @@ class WebviewOverlayClass {
     loadUrl(url) {
         return WebviewOverlayPlugin.loadUrl({ url });
     }
-    async hide() {
-        await WebviewOverlayPlugin.hide();
+    hide() {
+        WebviewOverlayPlugin.hide();
     }
-    async show() {
-        await WebviewOverlayPlugin.show();
+    show() {
+        WebviewOverlayPlugin.show();
     }
 }
 const WebviewOverlay = WebviewOverlayClass;

@@ -54,9 +54,9 @@ declare class WebviewOverlayClass {
     goForward(): void;
     reload(): void;
     loadUrl(url: string): Promise<void>;
-    hide(): void;
-    show(): void;
-    updateDimensions(options: Dimensions): void;
+    hide(): Promise<void>;
+    show(): Promise<void>;
+    updateDimensions(options: Dimensions): Promise<void>;
 }
 export declare const WebviewOverlay: typeof WebviewOverlayClass;
 export {};

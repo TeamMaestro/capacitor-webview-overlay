@@ -143,19 +143,14 @@ var capacitorWebviewOverlay = (function (exports, core, ResizeObserver) {
         loadUrl(url) {
             return WebviewOverlayPlugin.loadUrl({ url });
         }
-        hide() {
-            WebviewOverlayPlugin.hide();
+        async hide() {
+            return WebviewOverlayPlugin.hide();
         }
-        show() {
-            WebviewOverlayPlugin.show();
+        async show() {
+            return WebviewOverlayPlugin.show();
         }
-        updateDimensions(options) {
-            WebviewOverlayPlugin.updateDimensions({
-                width: Math.round(options.width),
-                height: Math.round(options.height),
-                x: Math.round(options.x),
-                y: Math.round(options.y)
-            });
+        async updateDimensions(options) {
+            return WebviewOverlayPlugin.updateDimensions(options);
         }
     }
     const WebviewOverlay = WebviewOverlayClass;

@@ -197,21 +197,16 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.loadUrl({ url });
     }
 
-    hide(){
-        WebviewOverlayPlugin.hide();
+    async hide(): Promise<void> {
+       return WebviewOverlayPlugin.hide();
     }
 
-    show(){
-        WebviewOverlayPlugin.show();
+    async show(): Promise<void>{
+        return WebviewOverlayPlugin.show();
     }
 
-    updateDimensions(options: Dimensions){
-        WebviewOverlayPlugin.updateDimensions({
-            width: Math.round(options.width),
-            height: Math.round(options.height),
-            x: Math.round(options.x),
-            y: Math.round(options.y)
-        });
+    async updateDimensions(options: Dimensions): Promise<void>{
+        return WebviewOverlayPlugin.updateDimensions(options);
     }
 
 }

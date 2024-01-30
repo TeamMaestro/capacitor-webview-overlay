@@ -20,6 +20,12 @@ export interface WebviewOverlayOpenOptions {
      */
     userAgent?: string;
 }
+interface Dimensions {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+}
 declare class WebviewOverlayClass {
     element: HTMLElement;
     updateSnapshotEvent: PluginListenerHandle;
@@ -50,7 +56,7 @@ declare class WebviewOverlayClass {
     loadUrl(url: string): Promise<void>;
     hide(): void;
     show(): void;
-    refreshDimensions(): void;
+    updateDimensions(options: Dimensions): void;
 }
 export declare const WebviewOverlay: typeof WebviewOverlayClass;
 export {};

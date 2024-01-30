@@ -152,15 +152,13 @@ class WebviewOverlayClass {
     }
     show() {
         WebviewOverlayPlugin.show();
-        this.refreshDimensions();
     }
-    refreshDimensions() {
-        const boundingBox = this.element.getBoundingClientRect();
+    updateDimensions(options) {
         WebviewOverlayPlugin.updateDimensions({
-            width: Math.round(boundingBox.width),
-            height: Math.round(boundingBox.height),
-            x: Math.round(boundingBox.x),
-            y: Math.round(boundingBox.y)
+            width: Math.round(options.width),
+            height: Math.round(options.height),
+            x: Math.round(options.x),
+            y: Math.round(options.y)
         });
     }
 }

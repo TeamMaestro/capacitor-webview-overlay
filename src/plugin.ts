@@ -28,6 +28,13 @@ export interface WebviewOverlayOpenOptions {
     userAgent?: string;
 }
 
+interface Dimensions {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+}
+
 class WebviewOverlayClass {
 
     element: HTMLElement;
@@ -196,16 +203,14 @@ class WebviewOverlayClass {
 
     show(){
         WebviewOverlayPlugin.show();
-        this.refreshDimensions();
     }
 
-    refreshDimensions() {
-        const boundingBox = this.element.getBoundingClientRect() as DOMRect;
+    updateDimensions(options: Dimensions){
         WebviewOverlayPlugin.updateDimensions({
-            width: Math.round(boundingBox.width),
-            height: Math.round(boundingBox.height),
-            x: Math.round(boundingBox.x),
-            y: Math.round(boundingBox.y)
+            width: Math.round(options.width),
+            height: Math.round(options.height),
+            x: Math.round(options.x),
+            y: Math.round(options.y)
         });
     }
 

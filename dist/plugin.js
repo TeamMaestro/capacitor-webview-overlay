@@ -148,6 +148,16 @@ var capacitorWebviewOverlay = (function (exports, core, ResizeObserver) {
         }
         show() {
             WebviewOverlayPlugin.show();
+            this.refreshDimensions();
+        }
+        refreshDimensions() {
+            const boundingBox = this.element.getBoundingClientRect();
+            WebviewOverlayPlugin.updateDimensions({
+                width: Math.round(boundingBox.width),
+                height: Math.round(boundingBox.height),
+                x: Math.round(boundingBox.x),
+                y: Math.round(boundingBox.y)
+            });
         }
     }
     const WebviewOverlay = WebviewOverlayClass;

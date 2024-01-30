@@ -32,6 +32,7 @@ export interface IWebviewOverlayPlugin {
     }>;
     goForward(): Promise<void>;
     reload(): Promise<void>;
+    refreshDimensions(): Promise<void>;
     handleNavigationEvent(options: {
         allow: boolean;
     }): Promise<void>;

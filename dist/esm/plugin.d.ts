@@ -50,6 +50,7 @@ declare class WebviewOverlayClass {
     loadUrl(url: string): Promise<void>;
     hide(): void;
     show(): void;
+    refreshDimensions(): void;
 }
 export declare const WebviewOverlay: typeof WebviewOverlayClass;
 export {};

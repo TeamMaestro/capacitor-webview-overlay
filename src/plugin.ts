@@ -190,6 +190,14 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.loadUrl({ url });
     }
 
+    async hide() : Promise<void>  {
+        await WebviewOverlayPlugin.hide();
+    }
+
+    async show() : Promise<void>  {
+        await WebviewOverlayPlugin.show();
+    }
+
 }
 
 export const WebviewOverlay =  WebviewOverlayClass;

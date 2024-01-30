@@ -5,7 +5,7 @@ Webview Overlay
 ## Install
 
 ```bash
-npm install @botfi/capacitor-webview-embed
+npm install @botfi-app/capacitor-webview-embed
 npx cap sync
 ```
 

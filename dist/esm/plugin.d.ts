@@ -58,5 +58,5 @@ declare class WebviewOverlayClass {
     show(): Promise<void>;
     updateDimensions(options: Dimensions): Promise<void>;
 }
-export declare const WebviewOverlay: typeof WebviewOverlayClass;
+export declare const WebviewEmbed: typeof WebviewOverlayClass;
 export {};

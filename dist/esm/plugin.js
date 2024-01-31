@@ -143,5 +143,5 @@ class WebviewOverlayClass {
         return WebviewOverlayPlugin.updateDimensions(options);
     }
 }
-export const WebviewOverlay = WebviewOverlayClass;
+export const WebviewEmbed = WebviewOverlayClass;
 //# sourceMappingURL=plugin.js.map

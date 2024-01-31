@@ -211,4 +211,4 @@ class WebviewOverlayClass {
 
 }
 
-export const WebviewOverlay =  WebviewOverlayClass;
+export const WebviewEmbed =  WebviewOverlayClass;

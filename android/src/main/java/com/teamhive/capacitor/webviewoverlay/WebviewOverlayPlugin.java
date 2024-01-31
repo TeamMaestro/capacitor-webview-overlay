@@ -193,7 +193,11 @@ public class WebviewOverlayPlugin extends Plugin {
                             loadUrlCall.success();
                             loadUrlCall = null;
                         }
-                        notifyListeners("pageLoaded", new JSObject());
+
+                        final JSObject ret = new JSObject();
+                        ret.put("url", url);
+
+                        notifyListeners("pageLoaded", ret);
                     }
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {

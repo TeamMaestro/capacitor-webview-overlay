@@ -1,11 +1,11 @@
 import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
-import { IWebviewOverlayPlugin, ScriptInjectionTime } from './definitions';
+import { IWebviewEmbedPlugin, ScriptInjectionTime } from './definitions';
 
 import ResizeObserver from 'resize-observer-polyfill';
 
-const WebviewOverlayPlugin = registerPlugin<IWebviewOverlayPlugin>('WebviewOverlayPlugin');
+const WebviewEmbedPlugin = registerPlugin<IWebviewEmbedPlugin>('WebviewEmbedPlugin');
 
-export interface WebviewOverlayOpenOptions {
+export interface WebviewEmbedOpenOptions {
     /**
      * The URL to open the webview to
      */
@@ -26,6 +26,12 @@ export interface WebviewOverlayOpenOptions {
      * Allow use append the string to the end of the user agent.
      */
     userAgent?: string;
+
+    /**
+     * The webmessage javascript objet name, this enables you to have a bidirectional 
+     * communnication from the webview, default: capWebviewEmbed 
+     */
+    webMessageJsObjectName?: string;
 }
 
 interface Dimensions {
@@ -35,7 +41,7 @@ interface Dimensions {
     y: number;
 }
 
-class WebviewOverlayClass {
+class WebviewEmbedClass {
 
     element: HTMLElement;
     updateSnapshotEvent: PluginListenerHandle;
@@ -44,7 +50,7 @@ class WebviewOverlayClass {
     navigationHandlerEvent: PluginListenerHandle;
     resizeObserver: ResizeObserver;
 
-    open(options: WebviewOverlayOpenOptions): Promise<void> {
+    open(options: WebviewEmbedOpenOptions): Promise<void> {
         this.element = options.element;
 
         if (this.element && this.element.style) {
@@ -54,7 +60,7 @@ class WebviewOverlayClass {
         }
         const boundingBox = this.element.getBoundingClientRect() as DOMRect;
 
-        this.updateSnapshotEvent = WebviewOverlayPlugin.addListener('updateSnapshot', () => {
+        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
             setTimeout(() => {
                 this.toggleSnapshot(true);
             }, 100)
@@ -63,7 +69,7 @@ class WebviewOverlayClass {
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const _entry of entries) {
                 const boundingBox = options.element.getBoundingClientRect() as DOMRect;
-                WebviewOverlayPlugin.updateDimensions({
+                WebviewEmbedPlugin.updateDimensions({
                     width: Math.round(boundingBox.width),
                     height: Math.round(boundingBox.height),
                     x: Math.round(boundingBox.x),
@@ -73,7 +79,7 @@ class WebviewOverlayClass {
         });
         this.resizeObserver.observe(this.element);
 
-        return WebviewOverlayPlugin.open({
+        return WebviewEmbedPlugin.open({
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
             userAgent: options.userAgent ? options.userAgent : '',
@@ -81,7 +87,8 @@ class WebviewOverlayClass {
             width: Math.round(boundingBox.width),
             height: Math.round(boundingBox.height),
             x: Math.round(boundingBox.x),
-            y: Math.round(boundingBox.y)
+            y: Math.round(boundingBox.y),
+            webMessageJsObjectName: (options.webMessageJsObjectName || "capWebviewEmbed")
         });
     }
 
@@ -100,12 +107,12 @@ class WebviewOverlayClass {
         if (this.navigationHandlerEvent) {
             this.navigationHandlerEvent.remove();
         }
-        return WebviewOverlayPlugin.close();
+        return WebviewEmbedPlugin.close();
     }
 
     async toggleSnapshot(snapshotVisible: boolean): Promise<void> {
         return new Promise<void>(async (resolve) => {
-            const snapshot = (await WebviewOverlayPlugin.getSnapshot()).src;
+            const snapshot = (await WebviewEmbedPlugin.getSnapshot()).src;
             if (snapshotVisible) {
                 if (snapshot) {
                     const buffer = await (await fetch('data:image/jpeg;base64,' + snapshot)).arrayBuffer();
@@ -117,7 +124,7 @@ class WebviewOverlayClass {
                             this.element.style.backgroundImage = `url(${blobUrl})`;
                         }
                         setTimeout(async () => {
-                            await WebviewOverlayPlugin.hide();
+                            await WebviewEmbedPlugin.hide();
                             resolve();
                         }, 25)
                     };
@@ -127,7 +134,7 @@ class WebviewOverlayClass {
                     if (this.element && this.element.style) {
                         this.element.style.backgroundImage = `none`;
                     }
-                    await WebviewOverlayPlugin.hide();
+                    await WebviewEmbedPlugin.hide();
                     resolve();
                 }
             }
@@ -135,24 +142,24 @@ class WebviewOverlayClass {
                 if (this.element && this.element.style) {
                     this.element.style.backgroundImage = `none`;
                 }
-                await WebviewOverlayPlugin.show();
+                await WebviewEmbedPlugin.show();
                 resolve();
             }
         });
     }
 
     async evaluateJavaScript(javascript: string): Promise<string> {
-        return (await WebviewOverlayPlugin.evaluateJavaScript({
+        return (await WebviewEmbedPlugin.evaluateJavaScript({
             javascript
         })).result;
     }
 
     onPageLoaded(listenerFunc: () => void) {
-        this.pageLoadedEvent = WebviewOverlayPlugin.addListener('pageLoaded', listenerFunc);
+        this.pageLoadedEvent = WebviewEmbedPlugin.addListener('pageLoaded', listenerFunc);
     }
 
     onProgress(listenerFunc: (progress: { value: number }) => void) {
-        this.progressEvent = WebviewOverlayPlugin.addListener('progress', listenerFunc);
+        this.progressEvent = WebviewEmbedPlugin.addListener('progress', listenerFunc);
     }
 
     handleNavigation(listenerFunc: (event: {
@@ -161,54 +168,54 @@ class WebviewOverlayClass {
         sameHost: boolean,
         complete: (allow: boolean) => void
     }) => void) {
-        this.navigationHandlerEvent = WebviewOverlayPlugin.addListener('navigationHandler', (event: any) => {
+        this.navigationHandlerEvent = WebviewEmbedPlugin.addListener('navigationHandler', (event: any) => {
             const complete = (allow: boolean) => {
-                WebviewOverlayPlugin.handleNavigationEvent({ allow });
+                WebviewEmbedPlugin.handleNavigationEvent({ allow });
             }
             listenerFunc({ ...event, complete });
         });
     }
 
     toggleFullscreen() {
-        WebviewOverlayPlugin.toggleFullscreen();
+        WebviewEmbedPlugin.toggleFullscreen();
     }
 
     async canGoBack (): Promise<boolean> {
-       return (await WebviewOverlayPlugin.canGoBack()).result
+       return (await WebviewEmbedPlugin.canGoBack()).result
     }
 
     goBack() {
-        WebviewOverlayPlugin.goBack();
+        WebviewEmbedPlugin.goBack();
     }
 
     async canGoForward (): Promise<boolean> {
-        return (await WebviewOverlayPlugin.canGoForward()).result
+        return (await WebviewEmbedPlugin.canGoForward()).result
      }
 
     goForward() {
-        WebviewOverlayPlugin.goForward();
+        WebviewEmbedPlugin.goForward();
     }
 
     reload() {
-        WebviewOverlayPlugin.reload();
+        WebviewEmbedPlugin.reload();
     }
 
     loadUrl(url: string) {
-        return WebviewOverlayPlugin.loadUrl({ url });
+        return WebviewEmbedPlugin.loadUrl({ url });
     }
 
     async hide(): Promise<void> {
-       return WebviewOverlayPlugin.hide();
+       return WebviewEmbedPlugin.hide();
     }
 
     async show(): Promise<void>{
-        return WebviewOverlayPlugin.show();
+        return WebviewEmbedPlugin.show();
     }
 
     async updateDimensions(options: Dimensions): Promise<void>{
-        return WebviewOverlayPlugin.updateDimensions(options);
+        return WebviewEmbedPlugin.updateDimensions(options);
     }
 
 }
 
-export const WebviewEmbed =  WebviewOverlayClass;
+export const WebviewEmbed =  WebviewEmbedClass;

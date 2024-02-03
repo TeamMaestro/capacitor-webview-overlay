@@ -1,6 +1,6 @@
 import { PluginListenerHandle } from '@capacitor/core';
 
-export interface IWebviewOverlayPlugin {
+export interface IWebviewEmbedPlugin {
     /**
      * Open a webview with the given URL
      */
@@ -52,6 +52,8 @@ interface OpenOptions extends Dimensions {
     javascript?: string;
     injectionTime?: ScriptInjectionTime;
     userAgent?: string;
+
+    webMessageJsObjectName?: string;
 }
 
 interface Dimensions {

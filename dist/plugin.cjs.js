@@ -15,8 +15,8 @@ exports.ScriptInjectionTime = void 0;
     ScriptInjectionTime[ScriptInjectionTime["atDocumentEnd"] = 1] = "atDocumentEnd";
 })(exports.ScriptInjectionTime || (exports.ScriptInjectionTime = {}));
 
-const WebviewOverlayPlugin = core.registerPlugin('WebviewOverlayPlugin');
-class WebviewOverlayClass {
+const WebviewEmbedPlugin = core.registerPlugin('WebviewEmbedPlugin');
+class WebviewEmbedClass {
     open(options) {
         this.element = options.element;
         if (this.element && this.element.style) {
@@ -25,7 +25,7 @@ class WebviewOverlayClass {
             this.element.style.backgroundPosition = 'center';
         }
         const boundingBox = this.element.getBoundingClientRect();
-        this.updateSnapshotEvent = WebviewOverlayPlugin.addListener('updateSnapshot', () => {
+        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
             setTimeout(() => {
                 this.toggleSnapshot(true);
             }, 100);
@@ -33,7 +33,7 @@ class WebviewOverlayClass {
         this.resizeObserver = new ResizeObserver__default['default']((entries) => {
             for (const _entry of entries) {
                 const boundingBox = options.element.getBoundingClientRect();
-                WebviewOverlayPlugin.updateDimensions({
+                WebviewEmbedPlugin.updateDimensions({
                     width: Math.round(boundingBox.width),
                     height: Math.round(boundingBox.height),
                     x: Math.round(boundingBox.x),
@@ -42,7 +42,7 @@ class WebviewOverlayClass {
             }
         });
         this.resizeObserver.observe(this.element);
-        return WebviewOverlayPlugin.open({
+        return WebviewEmbedPlugin.open({
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
             userAgent: options.userAgent ? options.userAgent : '',
@@ -50,7 +50,8 @@ class WebviewOverlayClass {
             width: Math.round(boundingBox.width),
             height: Math.round(boundingBox.height),
             x: Math.round(boundingBox.x),
-            y: Math.round(boundingBox.y)
+            y: Math.round(boundingBox.y),
+            webMessageJsObjectName: (options.webMessageJsObjectName || "capWebviewEmbed")
         });
     }
     close() {
@@ -68,11 +69,11 @@ class WebviewOverlayClass {
         if (this.navigationHandlerEvent) {
             this.navigationHandlerEvent.remove();
         }
-        return WebviewOverlayPlugin.close();
+        return WebviewEmbedPlugin.close();
     }
     async toggleSnapshot(snapshotVisible) {
         return new Promise(async (resolve) => {
-            const snapshot = (await WebviewOverlayPlugin.getSnapshot()).src;
+            const snapshot = (await WebviewEmbedPlugin.getSnapshot()).src;
             if (snapshotVisible) {
                 if (snapshot) {
                     const buffer = await (await fetch('data:image/jpeg;base64,' + snapshot)).arrayBuffer();
@@ -84,7 +85,7 @@ class WebviewOverlayClass {
                             this.element.style.backgroundImage = `url(${blobUrl})`;
                         }
                         setTimeout(async () => {
-                            await WebviewOverlayPlugin.hide();
+                            await WebviewEmbedPlugin.hide();
                             resolve();
                         }, 25);
                     };
@@ -94,7 +95,7 @@ class WebviewOverlayClass {
                     if (this.element && this.element.style) {
                         this.element.style.backgroundImage = `none`;
                     }
-                    await WebviewOverlayPlugin.hide();
+                    await WebviewEmbedPlugin.hide();
                     resolve();
                 }
             }
@@ -102,62 +103,68 @@ class WebviewOverlayClass {
                 if (this.element && this.element.style) {
                     this.element.style.backgroundImage = `none`;
                 }
-                await WebviewOverlayPlugin.show();
+                await WebviewEmbedPlugin.show();
                 resolve();
             }
         });
     }
     async evaluateJavaScript(javascript) {
-        return (await WebviewOverlayPlugin.evaluateJavaScript({
+        return (await WebviewEmbedPlugin.evaluateJavaScript({
             javascript
         })).result;
     }
     onPageLoaded(listenerFunc) {
-        this.pageLoadedEvent = WebviewOverlayPlugin.addListener('pageLoaded', listenerFunc);
+        this.pageLoadedEvent = WebviewEmbedPlugin.addListener('pageLoaded', listenerFunc);
     }
     onProgress(listenerFunc) {
-        this.progressEvent = WebviewOverlayPlugin.addListener('progress', listenerFunc);
+        this.progressEvent = WebviewEmbedPlugin.addListener('progress', listenerFunc);
+    }
+    onMessage(listenerFunc) {
+        this.messageEvent = WebviewEmbedPlugin.addListener('message', listenerFunc);
     }
     handleNavigation(listenerFunc) {
-        this.navigationHandlerEvent = WebviewOverlayPlugin.addListener('navigationHandler', (event) => {
+        this.navigationHandlerEvent = WebviewEmbedPlugin.addListener('navigationHandler', (event) => {
             const complete = (allow) => {
-                WebviewOverlayPlugin.handleNavigationEvent({ allow });
+                WebviewEmbedPlugin.handleNavigationEvent({ allow });
             };
             listenerFunc(Object.assign(Object.assign({}, event), { complete }));
         });
     }
     toggleFullscreen() {
-        WebviewOverlayPlugin.toggleFullscreen();
+        WebviewEmbedPlugin.toggleFullscreen();
     }
     async canGoBack() {
-        return (await WebviewOverlayPlugin.canGoBack()).result;
+        return (await WebviewEmbedPlugin.canGoBack()).result;
     }
     goBack() {
-        WebviewOverlayPlugin.goBack();
+        WebviewEmbedPlugin.goBack();
     }
     async canGoForward() {
-        return (await WebviewOverlayPlugin.canGoForward()).result;
+        return (await WebviewEmbedPlugin.canGoForward()).result;
     }
     goForward() {
-        WebviewOverlayPlugin.goForward();
+        WebviewEmbedPlugin.goForward();
     }
     reload() {
-        WebviewOverlayPlugin.reload();
+        WebviewEmbedPlugin.reload();
     }
     loadUrl(url) {
-        return WebviewOverlayPlugin.loadUrl({ url });
+        return WebviewEmbedPlugin.loadUrl({ url });
     }
     async hide() {
-        return WebviewOverlayPlugin.hide();
+        return WebviewEmbedPlugin.hide();
     }
     async show() {
-        return WebviewOverlayPlugin.show();
+        return WebviewEmbedPlugin.show();
     }
     async updateDimensions(options) {
-        return WebviewOverlayPlugin.updateDimensions(options);
+        return WebviewEmbedPlugin.updateDimensions(options);
+    }
+    async postMessage(message) {
+        return WebviewEmbedPlugin.postMessage({ message });
     }
 }
-const WebviewEmbed = WebviewOverlayClass;
+const WebviewEmbed = WebviewEmbedClass;
 
 exports.WebviewEmbed = WebviewEmbed;
 //# sourceMappingURL=plugin.cjs.js.map

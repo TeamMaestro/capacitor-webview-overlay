@@ -47,6 +47,7 @@ class WebviewEmbedClass {
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
+    messageEvent: PluginListenerHandle;
     navigationHandlerEvent: PluginListenerHandle;
     resizeObserver: ResizeObserver;
 
@@ -162,6 +163,11 @@ class WebviewEmbedClass {
         this.progressEvent = WebviewEmbedPlugin.addListener('progress', listenerFunc);
     }
 
+
+    onMessage(listenerFunc: (message: any) => void) {
+        this.messageEvent = WebviewEmbedPlugin.addListener('message', listenerFunc);
+    }
+
     handleNavigation(listenerFunc: (event: {
         url: string,
         newWindow: boolean,
@@ -214,6 +220,10 @@ class WebviewEmbedClass {
 
     async updateDimensions(options: Dimensions): Promise<void>{
         return WebviewEmbedPlugin.updateDimensions(options);
+    }
+
+    async postMessage(message: string): Promise<void> {
+        return WebviewEmbedPlugin.postMessage({ message });
     }
 
 }

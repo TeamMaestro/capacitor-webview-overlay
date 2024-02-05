@@ -38,9 +38,18 @@ export interface IWebviewEmbedPlugin {
 
     updateDimensions(options: Dimensions): Promise<void>;
 
+    postMessage(options: { message: string }): Promise<void>;
+
     evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;
 
-    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress' | 'navigationHandler', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
+    addListener(eventName: 
+        'pageLoaded' | 
+        'updateSnapshot' | 
+        'progress' | 
+        'navigationHandler' | 
+        'message', 
+        listenerFunc: (...args: any[]) => void
+    ): PluginListenerHandle;
 }
 
 interface OpenOptions extends Dimensions {

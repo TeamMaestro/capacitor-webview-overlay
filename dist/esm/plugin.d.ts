@@ -1,7 +1,7 @@
 import { PluginListenerHandle } from '@capacitor/core';
 import { ScriptInjectionTime } from './definitions';
 import ResizeObserver from 'resize-observer-polyfill';
-export interface WebviewOverlayOpenOptions {
+export interface WebviewEmbedOpenOptions {
     /**
      * The URL to open the webview to
      */
@@ -19,6 +19,11 @@ export interface WebviewOverlayOpenOptions {
      * Allow use append the string to the end of the user agent.
      */
     userAgent?: string;
+    /**
+     * The webmessage javascript objet name, this enables you to have a bidirectional
+     * communnication from the webview, default: capWebviewEmbed
+     */
+    webMessageJsObjectName?: string;
 }
 interface Dimensions {
     width: number;
@@ -26,14 +31,15 @@ interface Dimensions {
     x: number;
     y: number;
 }
-declare class WebviewOverlayClass {
+declare class WebviewEmbedClass {
     element: HTMLElement;
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
+    messageEvent: PluginListenerHandle;
     navigationHandlerEvent: PluginListenerHandle;
     resizeObserver: ResizeObserver;
-    open(options: WebviewOverlayOpenOptions): Promise<void>;
+    open(options: WebviewEmbedOpenOptions): Promise<void>;
     close(): Promise<void>;
     toggleSnapshot(snapshotVisible: boolean): Promise<void>;
     evaluateJavaScript(javascript: string): Promise<string>;
@@ -41,6 +47,7 @@ declare class WebviewOverlayClass {
     onProgress(listenerFunc: (progress: {
         value: number;
     }) => void): void;
+    onMessage(listenerFunc: (message: any) => void): void;
     handleNavigation(listenerFunc: (event: {
         url: string;
         newWindow: boolean;
@@ -57,6 +64,7 @@ declare class WebviewOverlayClass {
     hide(): Promise<void>;
     show(): Promise<void>;
     updateDimensions(options: Dimensions): Promise<void>;
+    postMessage(message: string): Promise<void>;
 }
-export declare const WebviewEmbed: typeof WebviewOverlayClass;
+export declare const WebviewEmbed: typeof WebviewEmbedClass;
 export {};

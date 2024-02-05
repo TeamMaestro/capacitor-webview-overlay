@@ -1,5 +1,5 @@
 import { PluginListenerHandle } from '@capacitor/core';
-export interface IWebviewOverlayPlugin {
+export interface IWebviewEmbedPlugin {
     /**
      * Open a webview with the given URL
      */
@@ -36,12 +36,15 @@ export interface IWebviewOverlayPlugin {
         allow: boolean;
     }): Promise<void>;
     updateDimensions(options: Dimensions): Promise<void>;
+    postMessage(options: {
+        message: string;
+    }): Promise<void>;
     evaluateJavaScript(options: {
         javascript: string;
     }): Promise<{
         result: string;
     }>;
-    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress' | 'navigationHandler', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
+    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress' | 'navigationHandler' | 'message', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
 }
 interface OpenOptions extends Dimensions {
     /**
@@ -51,6 +54,7 @@ interface OpenOptions extends Dimensions {
     javascript?: string;
     injectionTime?: ScriptInjectionTime;
     userAgent?: string;
+    webMessageJsObjectName?: string;
 }
 interface Dimensions {
     width: number;

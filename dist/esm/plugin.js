@@ -1,75 +1,24 @@
-import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
-import { IWebviewEmbedPlugin, ScriptInjectionTime } from './definitions';
-
+import { registerPlugin } from '@capacitor/core';
+import { ScriptInjectionTime } from './definitions';
 import ResizeObserver from 'resize-observer-polyfill';
-
-const WebviewEmbedPlugin = registerPlugin<IWebviewEmbedPlugin>('WebviewEmbedPlugin');
-
-export interface WebviewEmbedOpenOptions {
-    /**
-     * The URL to open the webview to
-     */
-    url: string;
-
-    script?: {
-        javascript: string;
-        injectionTime?: ScriptInjectionTime;
-    }
-
-    /**
-     * The element to open the webview in place of. The webview will open with the same dimensions and fixed position on screen.
-     * When toggled off, the element will have a background image with the webview snapshot.
-     */
-    element: HTMLElement;
-
-    /**
-     * Allow use append the string to the end of the user agent.
-     */
-    userAgent?: string;
-
-    /**
-     * The webmessage javascript objet name, this enables you to have a bidirectional 
-     * communnication from the webview, default: capWebviewEmbed 
-     */
-    webMessageJsObjectName?: string;
-}
-
-interface Dimensions {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-}
-
+const WebviewEmbedPlugin = registerPlugin('WebviewEmbedPlugin');
 class WebviewEmbedClass {
-
-    element: HTMLElement;
-    updateSnapshotEvent: PluginListenerHandle;
-    pageLoadedEvent: PluginListenerHandle;
-    progressEvent: PluginListenerHandle;
-    messageEvent: PluginListenerHandle;
-    navigationHandlerEvent: PluginListenerHandle;
-    resizeObserver: ResizeObserver;
-
-    open(options: WebviewEmbedOpenOptions): Promise<void> {
+    open(options) {
         this.element = options.element;
-
         if (this.element && this.element.style) {
             this.element.style.backgroundSize = 'cover';
             this.element.style.backgroundRepeat = 'no-repeat';
             this.element.style.backgroundPosition = 'center';
         }
-        const boundingBox = this.element.getBoundingClientRect() as DOMRect;
-
+        const boundingBox = this.element.getBoundingClientRect();
         this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
             setTimeout(() => {
                 this.toggleSnapshot(true);
-            }, 100)
+            }, 100);
         });
-
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const _entry of entries) {
-                const boundingBox = options.element.getBoundingClientRect() as DOMRect;
+                const boundingBox = options.element.getBoundingClientRect();
                 WebviewEmbedPlugin.updateDimensions({
                     width: Math.round(boundingBox.width),
                     height: Math.round(boundingBox.height),
@@ -79,7 +28,6 @@ class WebviewEmbedClass {
             }
         });
         this.resizeObserver.observe(this.element);
-
         return WebviewEmbedPlugin.open({
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
@@ -92,8 +40,7 @@ class WebviewEmbedClass {
             webMessageJsObjectName: (options.webMessageJsObjectName || "capWebviewEmbed")
         });
     }
-
-    close(): Promise<void> {
+    close() {
         this.element = undefined;
         this.resizeObserver.disconnect();
         if (this.updateSnapshotEvent) {
@@ -110,9 +57,8 @@ class WebviewEmbedClass {
         }
         return WebviewEmbedPlugin.close();
     }
-
-    async toggleSnapshot(snapshotVisible: boolean): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+    async toggleSnapshot(snapshotVisible) {
+        return new Promise(async (resolve) => {
             const snapshot = (await WebviewEmbedPlugin.getSnapshot()).src;
             if (snapshotVisible) {
                 if (snapshot) {
@@ -127,7 +73,7 @@ class WebviewEmbedClass {
                         setTimeout(async () => {
                             await WebviewEmbedPlugin.hide();
                             resolve();
-                        }, 25)
+                        }, 25);
                     };
                     img.src = blobUrl;
                 }
@@ -148,84 +94,61 @@ class WebviewEmbedClass {
             }
         });
     }
-
-    async evaluateJavaScript(javascript: string): Promise<string> {
+    async evaluateJavaScript(javascript) {
         return (await WebviewEmbedPlugin.evaluateJavaScript({
             javascript
         })).result;
     }
-
-    onPageLoaded(listenerFunc: () => void) {
+    onPageLoaded(listenerFunc) {
         this.pageLoadedEvent = WebviewEmbedPlugin.addListener('pageLoaded', listenerFunc);
     }
-
-    onProgress(listenerFunc: (progress: { value: number }) => void) {
+    onProgress(listenerFunc) {
         this.progressEvent = WebviewEmbedPlugin.addListener('progress', listenerFunc);
     }
-
-
-    onMessage(listenerFunc: (message: any) => void) {
+    onMessage(listenerFunc) {
         this.messageEvent = WebviewEmbedPlugin.addListener('message', listenerFunc);
     }
-
-    handleNavigation(listenerFunc: (event: {
-        url: string,
-        newWindow: boolean,
-        sameHost: boolean,
-        complete: (allow: boolean) => void
-    }) => void) {
-        this.navigationHandlerEvent = WebviewEmbedPlugin.addListener('navigationHandler', (event: any) => {
-            const complete = (allow: boolean) => {
+    handleNavigation(listenerFunc) {
+        this.navigationHandlerEvent = WebviewEmbedPlugin.addListener('navigationHandler', (event) => {
+            const complete = (allow) => {
                 WebviewEmbedPlugin.handleNavigationEvent({ allow });
-            }
-            listenerFunc({ ...event, complete });
+            };
+            listenerFunc(Object.assign(Object.assign({}, event), { complete }));
         });
     }
-
     toggleFullscreen() {
         WebviewEmbedPlugin.toggleFullscreen();
     }
-
-    async canGoBack (): Promise<boolean> {
-       return (await WebviewEmbedPlugin.canGoBack()).result
+    async canGoBack() {
+        return (await WebviewEmbedPlugin.canGoBack()).result;
     }
-
     goBack() {
         WebviewEmbedPlugin.goBack();
     }
-
-    async canGoForward (): Promise<boolean> {
-        return (await WebviewEmbedPlugin.canGoForward()).result
-     }
-
+    async canGoForward() {
+        return (await WebviewEmbedPlugin.canGoForward()).result;
+    }
     goForward() {
         WebviewEmbedPlugin.goForward();
     }
-
     reload() {
         WebviewEmbedPlugin.reload();
     }
-
-    loadUrl(url: string) {
+    loadUrl(url) {
         return WebviewEmbedPlugin.loadUrl({ url });
     }
-
-    async hide(): Promise<void> {
-       return WebviewEmbedPlugin.hide();
+    async hide() {
+        return WebviewEmbedPlugin.hide();
     }
-
-    async show(): Promise<void>{
+    async show() {
         return WebviewEmbedPlugin.show();
     }
-
-    async updateDimensions(options: Dimensions): Promise<void>{
+    async updateDimensions(options) {
         return WebviewEmbedPlugin.updateDimensions(options);
     }
-
-    async postMessage(message: string): Promise<void> {
+    async postMessage(message) {
         return WebviewEmbedPlugin.postMessage({ message });
     }
-
 }
-
-export const WebviewEmbed =  WebviewEmbedClass;
+export const WebviewEmbed = WebviewEmbedClass;
+//# sourceMappingURL=plugin.js.map

@@ -1,26 +1,42 @@
-package com.teamhive.capacitor.webviewoverlay;
+package app.botfi.capacitor.webviewembed;
+
 import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Message;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebMessagePort;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.webkit.JavaScriptReplyProxy;
+import androidx.webkit.WebMessageCompat;
+import androidx.webkit.WebMessagePortCompat;
+import androidx.webkit.WebMessagePortCompat.WebMessageCallbackCompat;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.teamhive.capacitor.webviewoverlay.R;
+import app.botfi.capacitor.webviewembed.R;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -28,6 +44,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
+
+
 import android.util.Base64;
 
 import fi.iki.elonen.NanoHTTPD;
@@ -58,8 +79,30 @@ class MyHTTPD extends NanoHTTPD {
     }
 }
 
-@CapacitorPlugin(name = "WebviewOverlayPlugin")
-public class WebviewOverlayPlugin extends Plugin {
+
+class MessagePortMessageListener implements WebViewCompat.WebMessageListener {
+
+    WebviewEmbedPlugin wvPluginClzz;
+
+    MessagePortMessageListener(WebviewEmbedPlugin _wvPlugin) {
+        wvPluginClzz = _wvPlugin;
+    }
+
+    @Override
+    public void onPostMessage(
+        WebView webview,
+        WebMessageCompat message,
+        Uri sourceOrigin,
+        boolean isMainFrame,
+        JavaScriptReplyProxy replyProxy
+    ) {
+        wvPluginClzz.handleWebMessageListener(webview, message, sourceOrigin, isMainFrame, replyProxy);
+    }
+}
+
+
+@CapacitorPlugin(name = "WebviewEmbedPlugin")
+public class WebviewEmbedPlugin extends Plugin {
     private WebView webView;
     private boolean hidden = false;
     private boolean fullscreen = false;
@@ -74,6 +117,10 @@ public class WebviewOverlayPlugin extends Plugin {
     private PluginCall loadUrlCall;
 
     private MyHTTPD server;
+    
+    private boolean webMessageEnabled = false;
+    //private webMessageReplyPort;
+    
 
     @Override
     public void load() {
@@ -88,6 +135,7 @@ public class WebviewOverlayPlugin extends Plugin {
     @PluginMethod()
     public void open(final PluginCall call) {
         getActivity().runOnUiThread(new Runnable() {
+            @SuppressLint("RestrictedApi")
             @Override
             public void run() {
                 hidden = false;
@@ -113,6 +161,9 @@ public class WebviewOverlayPlugin extends Plugin {
 
                 final int injectionTime = call.getInt("injectionTime", 0);
 
+                final String webMessageJsObjectName = call.getString("webMessageJsObjectName", "capWebviewEmbed");
+                
+
                 closeFullscreenButton = new FloatingActionButton(getContext());
                 closeFullscreenButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#626272")));
                 closeFullscreenButton.setSize(FloatingActionButton.SIZE_MINI);
@@ -125,6 +176,7 @@ public class WebviewOverlayPlugin extends Plugin {
                         toggleFullscreen(null);
                     }
                 });
+                
                 closeFullscreenButton.setVisibility(View.GONE);
                 webView.addView(closeFullscreenButton);
 
@@ -193,7 +245,11 @@ public class WebviewOverlayPlugin extends Plugin {
                             loadUrlCall.success();
                             loadUrlCall = null;
                         }
-                        notifyListeners("pageLoaded", new JSObject());
+
+                        final JSObject ret = new JSObject();
+                        ret.put("url", url);
+
+                        notifyListeners("pageLoaded", ret);
                     }
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -246,11 +302,74 @@ public class WebviewOverlayPlugin extends Plugin {
                 else {
                     webView.loadUrl(urlString);
                 }
-              call.resolve();
+
+
+                initWebMessages(webMessageJsObjectName);
+                
+                call.resolve();
             }
+        });
+
+
+    } //end open 
+
+    
+    @SuppressLint("RequiresFeature")
+    private void initWebMessages(
+        String webMessageJsObjectName
+    ) {
+        
+        WebviewEmbedPlugin _wvo = this;
+
+        getActivity().runOnUiThread(() -> {
+
+            HashSet allowedOrigins = new HashSet(List.of(Uri.EMPTY));
+
+            WebViewCompat.addWebMessageListener(
+                webView,
+                webMessageJsObjectName,
+                allowedOrigins,
+                new MessagePortMessageListener(_wvo)
+            );
+            
+        });
+
+    }
+
+
+    @PluginMethod()
+    public void postMessage(final PluginCall call) {
+        
+        getActivity().runOnUiThread(() -> {
+            
+            if(webView != null) {
+                String message = call.getString("message", "");
+                WebViewCompat.postWebMessage(webView, new WebMessageCompat(message), Uri.EMPTY);
+            }
+            
+            call.resolve();
         });
     }
 
+    public void handleWebMessageListener(
+        WebView webview,
+        WebMessageCompat message,
+        Uri sourceOrigin,
+        boolean isMainFrame,
+        JavaScriptReplyProxy replyProxy
+    ) {
+        
+        JSObject ret = new JSObject();
+
+        ret.put("message", message.getData());
+        ret.put("ports", message.getData());
+       
+        ret.put("sourceOrigin", sourceOrigin);
+        ret.put("isMainFrame", isMainFrame);
+
+        notifyListeners("message", ret);
+    }
+    
     private void handleNavigation(String url, Boolean newWindow) {
         targetUrl = url;
         boolean sameHost;
@@ -407,7 +526,7 @@ public class WebviewOverlayPlugin extends Plugin {
                         }
                     });
                 }
-            });
+            }); 
         }
     }
 
@@ -446,6 +565,26 @@ public class WebviewOverlayPlugin extends Plugin {
     }
 
     @PluginMethod()
+    public void canGoBack(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                boolean result = false;
+
+                if (webView != null) {
+                    result = webView.canGoBack();
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("result", result);
+
+               call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod()
     public void goBack(final PluginCall call) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -453,7 +592,28 @@ public class WebviewOverlayPlugin extends Plugin {
                 if (webView != null) {
                     webView.goBack();
                 }
-                call.success();
+                call.resolve();
+            }
+        });
+    }
+
+
+    @PluginMethod()
+    public void canGoForward(final PluginCall call) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                boolean result = false;
+
+                if (webView != null) {
+                    result = webView.canGoForward();
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("result", result);
+
+               call.resolve(ret);
             }
         });
     }
@@ -515,4 +675,6 @@ public class WebviewOverlayPlugin extends Plugin {
             }
         });
     }
+    
+    
 }

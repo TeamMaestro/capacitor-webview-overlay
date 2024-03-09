@@ -2,6 +2,7 @@ import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
 import { IWebviewEmbedPlugin, ScriptInjectionTime } from './definitions';
 
 import ResizeObserver from 'resize-observer-polyfill';
+import { v4 as uuidv4 } from 'uuid';
 
 const WebviewEmbedPlugin = registerPlugin<IWebviewEmbedPlugin>('WebviewEmbedPlugin');
 
@@ -32,55 +33,54 @@ export interface WebviewEmbedOpenOptions {
      * communnication from the webview, default: capWebviewEmbed 
      */
     webMessageJsObjectName?: string;
+
+    /**
+     * incase of multiple tabs, the webview to use 
+     */
+    webviewId?:  string;
 }
 
 interface Dimensions {
+    webviewId: string; 
     width: number;
     height: number;
     x: number;
     y: number;
 }
 
+interface ObjectLiteral {
+    [key: string]: any;
+}
+
 class WebviewEmbedClass {
 
-    element: HTMLElement;
+    elements: ObjectLiteral = {};
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
     messageEvent: PluginListenerHandle;
     navigationHandlerEvent: PluginListenerHandle;
-    resizeObserver: ResizeObserver;
+    resizeObservers: ObjectLiteral = {};
 
-    open(options: WebviewEmbedOpenOptions): Promise<void> {
-        this.element = options.element;
+    async open(options: WebviewEmbedOpenOptions): Promise<{ result: string }> {
+         
+        let element = options.element;
+        let webviewId = (options.webviewId || "").trim()
 
-        if (this.element && this.element.style) {
-            this.element.style.backgroundSize = 'cover';
-            this.element.style.backgroundRepeat = 'no-repeat';
-            this.element.style.backgroundPosition = 'center';
+        if(webviewId == ""){
+            webviewId = uuidv4()
         }
-        const boundingBox = this.element.getBoundingClientRect() as DOMRect;
 
-        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
-            setTimeout(() => {
-                this.toggleSnapshot(true);
-            }, 100)
-        });
+        if (element && element.style) {
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundRepeat = 'no-repeat';
+            element.style.backgroundPosition = 'center';
+        }
+        const boundingBox = element.getBoundingClientRect() as DOMRect;
 
-        this.resizeObserver = new ResizeObserver((entries) => {
-            for (const _entry of entries) {
-                const boundingBox = options.element.getBoundingClientRect() as DOMRect;
-                WebviewEmbedPlugin.updateDimensions({
-                    width: Math.round(boundingBox.width),
-                    height: Math.round(boundingBox.height),
-                    x: Math.round(boundingBox.x),
-                    y: Math.round(boundingBox.y)
-                });
-            }
-        });
-        this.resizeObserver.observe(this.element);
-
-        return WebviewEmbedPlugin.open({
+       
+        let result = await  WebviewEmbedPlugin.open({
+            webviewId,
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
             userAgent: options.userAgent ? options.userAgent : '',
@@ -89,13 +89,51 @@ class WebviewEmbedClass {
             height: Math.round(boundingBox.height),
             x: Math.round(boundingBox.x),
             y: Math.round(boundingBox.y),
-            webMessageJsObjectName: (options.webMessageJsObjectName || "capWebviewEmbed")
+            webMessageJsObjectName: (options.webMessageJsObjectName || "__webviewEmbed")
         });
+
+        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
+            setTimeout(() => {
+                this.toggleSnapshot(webviewId, true);
+            }, 100)
+        });
+
+        this.resizeObservers[webviewId] = new ResizeObserver((entries) => {
+            for (const _entry of entries) {
+                const boundingBox = options.element.getBoundingClientRect() as DOMRect;
+                WebviewEmbedPlugin.updateDimensions({
+                    webviewId,
+                    width: Math.round(boundingBox.width),
+                    height: Math.round(boundingBox.height),
+                    x: Math.round(boundingBox.x),
+                    y: Math.round(boundingBox.y)
+                });
+            }
+        });
+
+        this.resizeObservers[webviewId].observe(element);
+        this.elements[webviewId] = element;
+
+        return result
     }
 
-    close(): Promise<void> {
-        this.element = undefined;
-        this.resizeObserver.disconnect();
+    // returns the next active webview id 
+    close(webviewId: string): Promise<void> {
+       
+        delete this.elements[webviewId];
+        
+        let rb = this.resizeObservers[webviewId] || null
+
+        if(rb && rb instanceof ResizeObserver){
+            try { this.resizeObservers[webviewId].disconnect(); } catch(e){}
+            delete this.resizeObservers[webviewId];
+        }    
+
+        return WebviewEmbedPlugin.close({ webviewId });
+
+    }
+
+    removeAllEvents(): void {
         if (this.updateSnapshotEvent) {
             this.updateSnapshotEvent.remove();
         }
@@ -108,12 +146,18 @@ class WebviewEmbedClass {
         if (this.navigationHandlerEvent) {
             this.navigationHandlerEvent.remove();
         }
-        return WebviewEmbedPlugin.close();
     }
 
-    async toggleSnapshot(snapshotVisible: boolean): Promise<void> {
+    async toggleSnapshot(webviewId: string, snapshotVisible: boolean): Promise<void> {
+
+        let _self = this;
+
         return new Promise<void>(async (resolve) => {
-            const snapshot = (await WebviewEmbedPlugin.getSnapshot()).src;
+
+            let element = _self.elements[webviewId]
+
+            const snapshot = (await WebviewEmbedPlugin.getSnapshot({ webviewId })).src;
+
             if (snapshotVisible) {
                 if (snapshot) {
                     const buffer = await (await fetch('data:image/jpeg;base64,' + snapshot)).arrayBuffer();
@@ -121,8 +165,8 @@ class WebviewEmbedClass {
                     const blobUrl = URL.createObjectURL(blob);
                     const img = new Image();
                     img.onload = async () => {
-                        if (this.element && this.element.style) {
-                            this.element.style.backgroundImage = `url(${blobUrl})`;
+                        if (element && element.style) {
+                            element.style.backgroundImage = `url(${blobUrl})`;
                         }
                         setTimeout(async () => {
                             await WebviewEmbedPlugin.hide();
@@ -132,21 +176,25 @@ class WebviewEmbedClass {
                     img.src = blobUrl;
                 }
                 else {
-                    if (this.element && this.element.style) {
-                        this.element.style.backgroundImage = `none`;
+                    if (element && element.style) {
+                        element.style.backgroundImage = `none`;
                     }
                     await WebviewEmbedPlugin.hide();
                     resolve();
                 }
             }
             else {
-                if (this.element && this.element.style) {
-                    this.element.style.backgroundImage = `none`;
+                if (element && element.style) {
+                    element.style.backgroundImage = `none`;
                 }
                 await WebviewEmbedPlugin.show();
                 resolve();
             }
         });
+    }
+
+    async setActiveWebview(webviewId: string): Promise<void> {
+        WebviewEmbedPlugin.setActiveWebview({  webviewId })
     }
 
     async evaluateJavaScript(javascript: string): Promise<string> {
@@ -159,7 +207,7 @@ class WebviewEmbedClass {
         this.pageLoadedEvent = WebviewEmbedPlugin.addListener('pageLoaded', listenerFunc);
     }
 
-    onProgress(listenerFunc: (progress: { value: number }) => void) {
+    onProgress(listenerFunc: (progress: { webviewId: string, value: number }) => void) {
         this.progressEvent = WebviewEmbedPlugin.addListener('progress', listenerFunc);
     }
 
@@ -172,6 +220,7 @@ class WebviewEmbedClass {
         url: string,
         newWindow: boolean,
         sameHost: boolean,
+        webviewId: string,
         complete: (allow: boolean) => void
     }) => void) {
         this.navigationHandlerEvent = WebviewEmbedPlugin.addListener('navigationHandler', (event: any) => {
@@ -186,28 +235,28 @@ class WebviewEmbedClass {
         WebviewEmbedPlugin.toggleFullscreen();
     }
 
-    async canGoBack (): Promise<boolean> {
-       return (await WebviewEmbedPlugin.canGoBack()).result
+    async canGoBack (webviewId: string): Promise<boolean> {
+       return (await WebviewEmbedPlugin.canGoBack({ webviewId })).result
     }
 
-    goBack() {
-        WebviewEmbedPlugin.goBack();
+    goBack(webviewId: string) {
+        WebviewEmbedPlugin.goBack({ webviewId});
     }
 
-    async canGoForward (): Promise<boolean> {
-        return (await WebviewEmbedPlugin.canGoForward()).result
+    async canGoForward (webviewId: string): Promise<boolean> {
+        return (await WebviewEmbedPlugin.canGoForward({ webviewId })).result
      }
 
-    goForward() {
-        WebviewEmbedPlugin.goForward();
+    goForward(webviewId: string) {
+        WebviewEmbedPlugin.goForward({ webviewId });
     }
 
-    reload() {
-        WebviewEmbedPlugin.reload();
+    reload(webviewId: string) {
+        WebviewEmbedPlugin.reload({ webviewId });
     }
 
-    loadUrl(url: string) {
-        return WebviewEmbedPlugin.loadUrl({ url });
+    loadUrl(webviewId: string, url: string) {
+        return WebviewEmbedPlugin.loadUrl({ webviewId, url });
     }
 
     async hide(): Promise<void> {
@@ -222,10 +271,10 @@ class WebviewEmbedClass {
         return WebviewEmbedPlugin.updateDimensions(options);
     }
 
-    async postMessage(message: string): Promise<void> {
-        return WebviewEmbedPlugin.postMessage({ message });
+    async postMessage(webviewId: string, message: string): Promise<void> {
+        return WebviewEmbedPlugin.postMessage({ webviewId, message });
     }
-
+    
 }
 
-export const WebviewEmbed =  WebviewEmbedClass;
+export const WebviewEmbed = new WebviewEmbedClass();

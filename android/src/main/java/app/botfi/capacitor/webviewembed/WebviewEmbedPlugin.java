@@ -15,19 +15,14 @@ import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
-import android.webkit.WebMessagePort;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.webkit.JavaScriptReplyProxy;
 import androidx.webkit.WebMessageCompat;
-import androidx.webkit.WebMessagePortCompat;
-import androidx.webkit.WebMessagePortCompat.WebMessageCallbackCompat;
 import androidx.webkit.WebViewCompat;
-import androidx.webkit.WebViewFeature;
 
 
 import com.getcapacitor.JSObject;
@@ -35,7 +30,6 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import app.botfi.capacitor.webviewembed.R;
 
 
 import java.io.ByteArrayOutputStream;
@@ -44,12 +38,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 
 import android.util.Base64;
+
+import org.json.JSONObject;
 
 import fi.iki.elonen.NanoHTTPD;
 
@@ -100,7 +99,6 @@ class MessagePortMessageListener implements WebViewCompat.WebMessageListener {
     }
 }
 
-
 @CapacitorPlugin(name = "WebviewEmbedPlugin")
 public class WebviewEmbedPlugin extends Plugin {
     private WebView webView;
@@ -112,14 +110,16 @@ public class WebviewEmbedPlugin extends Plugin {
     private float x;
     private float y;
 
-    private String targetUrl;
+    private HashMap<String, String> targetUrls = new HashMap<>();
 
-    private PluginCall loadUrlCall;
+    private   HashMap<String, PluginCall> loadUrlCalls = new HashMap<>();
 
     private MyHTTPD server;
     
-    private boolean webMessageEnabled = false;
+    //private boolean webMessageEnabled = false;
     //private webMessageReplyPort;
+    
+    private int totalTabs = 0;
     
 
     @Override
@@ -140,6 +140,7 @@ public class WebviewEmbedPlugin extends Plugin {
             public void run() {
                 hidden = false;
                 webView = new WebView(getContext());
+        
                 WebSettings settings = webView.getSettings();
                 settings.setAllowContentAccess(true);
                 settings.setAllowFileAccess(true);
@@ -150,9 +151,22 @@ public class WebviewEmbedPlugin extends Plugin {
                 settings.setDomStorageEnabled(true);
                 settings.setSupportMultipleWindows(true);
                 String userAgent = call.getString("userAgent", "");
+                
+                // tabId 
+                String webviewId = call.getString("webviewId", "");
+                
                 if (!userAgent.isEmpty()) {
                     settings.setUserAgentString(String.format("%s %s", settings.getUserAgentString(), userAgent));
                 }
+                
+                
+                //set the tab id     
+                webView.setTag(webviewId);
+                
+                // save the webview obj
+                getWebviewItems().put(webviewId, webView);
+                
+                //Log.i("TotalTabs===>", Integer.toString(totalTabs));
 
                 // Temp fix until this setting is on by default
                 bridge.getWebView().getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
@@ -161,7 +175,7 @@ public class WebviewEmbedPlugin extends Plugin {
 
                 final int injectionTime = call.getInt("injectionTime", 0);
 
-                final String webMessageJsObjectName = call.getString("webMessageJsObjectName", "capWebviewEmbed");
+                final String webMessageJsObjectName = call.getString("webMessageJsObjectName", "__webviewEmbed");
                 
 
                 closeFullscreenButton = new FloatingActionButton(getContext());
@@ -186,6 +200,7 @@ public class WebviewEmbedPlugin extends Plugin {
                     public void onProgressChanged(WebView view, int progress) {
                         JSObject progressValue = new JSObject();
                         progressValue.put("value", progress/100.0);
+                        progressValue.put("webviewId", view.getTag().toString());
                         notifyListeners("progress", progressValue);
                     }
 
@@ -194,15 +209,16 @@ public class WebviewEmbedPlugin extends Plugin {
                         final WebView targetWebView = new WebView(getActivity());
                         targetWebView.setWebViewClient(new WebViewClient() {
                             @Override
-                            public void onLoadResource(WebView view, String url) {
+                            public void onLoadResource(WebView view2, String url) {
                                 if (hasListeners("navigationHandler")) {
-                                    handleNavigation(url, true);
+                                    handleNavigation(view.getTag().toString(), url, true);
                                     JSObject progressValue = new JSObject();
                                     progressValue.put("value", 0.1);
+                                    progressValue.put("webviewId", view.getTag().toString());
                                     notifyListeners("progress", progressValue);
                                 }
                                 else {
-                                    webView.loadUrl(url);
+                                    view2.loadUrl(url);
                                 }
                                 targetWebView.removeAllViews();
                                 targetWebView.destroy();
@@ -224,42 +240,62 @@ public class WebviewEmbedPlugin extends Plugin {
                         if (!javascript.isEmpty() && injectionTime == 0) {
                             webView.evaluateJavascript(javascript, null);
                         }
+
+                        JSObject evtData = new JSObject();
+                        evtData.put("url", url);
+                        evtData.put("webviewId",  view.getTag().toString());
+                        
+                        notifyListeners("pageLoadStart", evtData);
                     }
 
                     @Override
                     public void onPageFinished(WebView view, String url) {
                         super.onPageFinished(view, url);
-                        if (webView != null) {
+                        
+                        String webviewId = view.getTag().toString();
+                        
+                        WebView _webview = getWebviewById(webviewId);
+                        
+                        if (_webview != null) {
                             if (!javascript.isEmpty() && injectionTime == 1) {
-                                webView.evaluateJavascript(javascript, null);
+                                _webview.evaluateJavascript(javascript, null);
                             }
                             if (!hidden) {
-                                webView.setVisibility(View.VISIBLE);
+                                _webview.setVisibility(View.VISIBLE);
                             } else {
-                                webView.setVisibility(View.INVISIBLE);
-                                notifyListeners("updateSnapshot", new JSObject());
+                                _webview.setVisibility(View.INVISIBLE);
+
+                                JSObject ret =  new JSObject();
+                                ret.put("webviewId",  webviewId);
+                                    
+                                notifyListeners("updateSnapshot",ret);
                             }
                         }
 
-                        if (loadUrlCall != null) {
-                            loadUrlCall.success();
-                            loadUrlCall = null;
+                        if (loadUrlCalls.containsKey(webviewId)) {
+                            loadUrlCalls.get(webviewId).success();
+                            loadUrlCalls.remove(webviewId);
                         }
 
                         final JSObject ret = new JSObject();
+                        
                         ret.put("url", url);
-
+                        ret.put("webviewId",  webviewId);
+                        
                         notifyListeners("pageLoaded", ret);
                     }
+                    
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-
+                        
+                        String webviewId = view.getTag().toString();
+                        
                         if (hasListeners("navigationHandler")) {
-                            handleNavigation(url, false);
+                            handleNavigation( webviewId, url, false);
                             return true;
                         }
                         else {
-                            targetUrl = null;
+                            targetUrls.remove(webviewId);
                             return false;
                         }
                     }
@@ -290,6 +326,8 @@ public class WebviewEmbedPlugin extends Plugin {
                 webView.requestLayout();
 
                 ((ViewGroup) getBridge().getWebView().getParent()).addView(webView);
+                
+               
 
                 if (urlString.contains("file:")) {
                     try {
@@ -297,25 +335,77 @@ public class WebviewEmbedPlugin extends Plugin {
                         server.start();
                     } catch (Exception e) {}
 
-                    webView.loadUrl(urlString.replace("file://", "http://localhost:8080"));
+                    String replacement = String.join("", "http://localhost:", Integer.toString(MyHTTPD.PORT));     
+
+                    webView.loadUrl(urlString.replace("file://", replacement));
                 }
                 else {
                     webView.loadUrl(urlString);
                 }
 
 
-                initWebMessages(webMessageJsObjectName);
+                initWebMessages(webView, webMessageJsObjectName);
                 
-                call.resolve();
+                JSObject ret = new JSObject();
+                ret.put("result", webviewId);
+                
+                call.resolve(ret);
             }
         });
 
 
-    } //end open 
+    } //end open
 
+
+    @PluginMethod()
+    public void setActiveWebview( final PluginCall call ) {
+        _setActiveWebview(call.getString("webviewId", ""));
+    }
+    
+    private void _setActiveWebview (String webviewId) {
+        getActivity().runOnUiThread(() -> {
+            
+            HashMap<String, WebView> webViewItems = WebviewItemsHolder.getInstance().webviewItems;
+
+            for (String key : webViewItems.keySet()) {
+                
+                WebView _wv =  webViewItems.get(webviewId);
+                
+                if(_wv == null){
+                    webViewItems.remove(key);
+                    continue;
+                }
+                
+                if (!key.equals(webviewId)) {
+                    _wv.setVisibility(View.INVISIBLE);
+                }
+            }
+
+            webView = this.getWebviewById(webviewId);
+
+            if (webView != null) {
+                webView.setVisibility(View.VISIBLE);
+            }
+
+        });
+    }
+    
+    private HashMap<String, WebView> getWebviewItems() {
+        return  WebviewItemsHolder.getInstance().webviewItems;
+    }
+    
+    public @Nullable WebView getWebviewById(String id) {
+        
+        if(!getWebviewItems().containsKey(id)){
+            return null;
+        }
+        
+        return getWebviewItems().get(id);
+    }
     
     @SuppressLint("RequiresFeature")
     private void initWebMessages(
+        WebView _webview,
         String webMessageJsObjectName
     ) {
         
@@ -323,10 +413,10 @@ public class WebviewEmbedPlugin extends Plugin {
 
         getActivity().runOnUiThread(() -> {
 
-            HashSet allowedOrigins = new HashSet(List.of(Uri.EMPTY));
+            HashSet allowedOrigins = new HashSet(List.of("*"));
 
             WebViewCompat.addWebMessageListener(
-                webView,
+                _webview,
                 webMessageJsObjectName,
                 allowedOrigins,
                 new MessagePortMessageListener(_wvo)
@@ -341,9 +431,12 @@ public class WebviewEmbedPlugin extends Plugin {
     public void postMessage(final PluginCall call) {
         
         getActivity().runOnUiThread(() -> {
-            
-            if(webView != null) {
-                String message = call.getString("message", "");
+
+            String message = call.getString("message", "");
+            String webviewId = call.getString("webviewId", "");
+            WebView _webview = getWebviewById(webviewId);
+                
+            if(_webview != null) {
                 WebViewCompat.postWebMessage(webView, new WebMessageCompat(message), Uri.EMPTY);
             }
             
@@ -352,7 +445,7 @@ public class WebviewEmbedPlugin extends Plugin {
     }
 
     public void handleWebMessageListener(
-        WebView webview,
+        WebView _webview,
         WebMessageCompat message,
         Uri sourceOrigin,
         boolean isMainFrame,
@@ -360,18 +453,19 @@ public class WebviewEmbedPlugin extends Plugin {
     ) {
         
         JSObject ret = new JSObject();
+        
+        String webviewId = _webview.getTag().toString();
 
         ret.put("message", message.getData());
-        ret.put("ports", message.getData());
-       
         ret.put("sourceOrigin", sourceOrigin);
         ret.put("isMainFrame", isMainFrame);
+        ret.put("webviewId", webviewId);
 
         notifyListeners("message", ret);
     }
     
-    private void handleNavigation(String url, Boolean newWindow) {
-        targetUrl = url;
+    private void handleNavigation(String webviewId, String url, Boolean newWindow) {
+        targetUrls.put(webviewId, url);
         boolean sameHost;
         try {
             URL currentUrl = new URL(webView.getUrl());
@@ -380,6 +474,7 @@ public class WebviewEmbedPlugin extends Plugin {
 
             JSObject navigationHandlerValue = new JSObject();
             navigationHandlerValue.put("url", url);
+            navigationHandlerValue.put("webviewId", webviewId);
             navigationHandlerValue.put("newWindow", newWindow);
             navigationHandlerValue.put("sameHost", sameHost);
 
@@ -390,73 +485,172 @@ public class WebviewEmbedPlugin extends Plugin {
 
     @PluginMethod()
     public void close(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-            if (webView != null) {
-                if (server != null && server.isAlive()) {
-                    server.stop();
-                }
+        getActivity().runOnUiThread(() -> {
+
+            String webviewId = call.getString("webviewId", "");
+
+            WebView _wv = this.getWebviewById(webviewId);
+
+            if (_wv != null) {
+            
+                // remove it 
+                getWebviewItems().remove(webviewId);
+                
                 ViewGroup rootGroup = ((ViewGroup) getBridge().getWebView().getParent());
-                int count = rootGroup.getChildCount();
-                if (count > 1) {
-                    rootGroup.removeView(webView);
-                    webView.destroyDrawingCache();
-                    webView.destroy();
-                    webView = null;
-                }
-                hidden = false;
+                
+                rootGroup.removeView(_wv);
+                _wv.destroyDrawingCache();
+                _wv.destroy();
+                
             }
-            call.resolve();
-            }
+            
         });
     }
 
     @PluginMethod()
     public void show(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                hidden = false;
-                if (webView != null) {
-                    webView.setVisibility(View.VISIBLE);
-                }
-                call.success();
+        getActivity().runOnUiThread(() -> {
+            hidden = false;
+            if (webView != null) {
+                webView.setVisibility(View.VISIBLE);
             }
+            call.success();
         });
     }
 
     @PluginMethod()
     public void hide(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                hidden = true;
-                if (webView != null) {
-                    webView.setVisibility(View.INVISIBLE);
-                }
-                call.success();
+        getActivity().runOnUiThread(() -> {
+            hidden = true;
+            if (webView != null) {
+                webView.setVisibility(View.INVISIBLE);
             }
+            call.success();
         });
     }
 
     @PluginMethod()
     public void updateDimensions(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                width = (int) getPixels(call.getInt("width", 1));
-                height = (int) getPixels(call.getInt("height", 1));
-                x = getPixels(call.getInt("x", 0));
-                y = getPixels(call.getInt("y", 0));
+        getActivity().runOnUiThread(() -> {
+            
+            width = (int) getPixels(call.getInt("width", 1));
+            height = (int) getPixels(call.getInt("height", 1));
+            x = getPixels(call.getInt("x", 0));
+            y = getPixels(call.getInt("y", 0));
 
-                if (!fullscreen) {
+            String webviewId = call.getString("webviewId", "");
+            
+            //Log.i("Dimention#webviewId:", webviewId);
+
+            WebView _wv = this.getWebviewById(webviewId);
+            
+            if(_wv == null ){
+                call.success();
+                return;
+            }
+
+            if (!fullscreen) {
+                ViewGroup.LayoutParams params = _wv.getLayoutParams();
+                params.width = width;
+                params.height = height;
+                _wv.setX(x);
+                _wv.setY(y);
+                _wv.requestLayout();
+            }
+            else {
+                ViewGroup.LayoutParams params = _wv.getLayoutParams();
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                _wv.setX(0);
+                _wv.setY(0);
+                _wv.requestLayout();
+            }
+
+            if (hidden) {
+                notifyListeners("updateSnapshot", new JSObject());
+            }
+            call.success();
+        });
+    }
+    
+
+    @PluginMethod()
+    public void getSnapshot(final PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            
+            String webviewId = call.getString("webviewId", "");
+            
+            WebView _wv = this.getWebviewById(webviewId);
+
+            final JSObject object = new JSObject();
+            
+            if (_wv != null) {
+                Bitmap bm = Bitmap.createBitmap(width == 0 ? 1 : width, height == 0 ? 1 : height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bm);
+                _wv.draw(canvas);
+                
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                bm.compress(Bitmap.CompressFormat.JPEG, 100, os);
+                byte[] byteArray = os.toByteArray();
+                String src = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                object.put("src", src);
+                call.resolve(object);
+            } else {
+                object.put("src", "");
+                call.resolve(object);
+            }
+        
+        });
+    }
+
+    @PluginMethod()
+    public void evaluateJavaScript(final PluginCall call) {
+        
+        getActivity().runOnUiThread(() -> {
+
+            final String javascript = call.getString("javascript", "");
+            String webviewId = call.getString("webviewId", "");
+
+            if (javascript.isEmpty()) {
+                call.error("Must provide javascript string");
+                return;
+            }
+
+            final JSObject object = new JSObject();
+            
+            WebView _wv = this.getWebviewById(webviewId);
+            
+            if(_wv == null) {
+                object.put("result", "");
+                call.resolve(object);
+                return;
+            }
+
+
+            _wv.evaluateJavascript(javascript, value -> {
+                if (value != null) {
+                    object.put("result", value);
+                    object.put("webviewId", webviewId);
+                    call.resolve(object);
+                }
+            });
+                
+        });
+    }
+
+    @PluginMethod()
+    public void toggleFullscreen(final PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (webView != null) {
+                if (fullscreen) {
                     ViewGroup.LayoutParams params = webView.getLayoutParams();
                     params.width = width;
                     params.height = height;
                     webView.setX(x);
                     webView.setY(y);
                     webView.requestLayout();
+                    fullscreen = false;
+                    closeFullscreenButton.setVisibility(View.GONE);
                 }
                 else {
                     ViewGroup.LayoutParams params = webView.getLayoutParams();
@@ -465,214 +659,149 @@ public class WebviewEmbedPlugin extends Plugin {
                     webView.setX(0);
                     webView.setY(0);
                     webView.requestLayout();
+                    fullscreen = true;
+                    closeFullscreenButton.setVisibility(View.VISIBLE);
                 }
-
-                if (hidden) {
-                    notifyListeners("updateSnapshot", new JSObject());
-                }
+            }
+            if (call != null) {
                 call.success();
             }
-        });
-    }
-
-    private WebView getWebView() {
-        return webView;
-    }
-
-    @PluginMethod()
-    public void getSnapshot(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final JSObject object = new JSObject();
-                if (webView != null) {
-                    Bitmap bm = Bitmap.createBitmap(width == 0 ? 1 : width, height == 0 ? 1 : height, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bm);
-                    getWebView().draw(canvas);
-                    ByteArrayOutputStream os = new ByteArrayOutputStream();
-                    bm.compress(Bitmap.CompressFormat.JPEG, 100, os);
-                    byte[] byteArray = os.toByteArray();
-                    String src = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                    object.put("src", src);
-                    call.resolve(object);
-                } else {
-                    object.put("src", "");
-                    call.resolve(object);
-                }
-            }
-        });
-    }
-
-    @PluginMethod()
-    public void evaluateJavaScript(final PluginCall call) {
-        final String javascript = call.getString("javascript", "");
-        if (javascript.isEmpty()) {
-            call.error("Must provide javascript string");
-            return;
-        }
-
-        if (webView != null) {
-            final JSObject object = new JSObject();
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    webView.evaluateJavascript(javascript, new ValueCallback<String>() {
-                        @Override
-                        public void onReceiveValue(String value) {
-                            if (value != null) {
-                                object.put("result", value);
-                                call.resolve(object);
-                            }
-                        }
-                    });
-                }
-            }); 
-        }
-    }
-
-    @PluginMethod()
-    public void toggleFullscreen(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (webView != null) {
-                    if (fullscreen) {
-                        ViewGroup.LayoutParams params = webView.getLayoutParams();
-                        params.width = width;
-                        params.height = height;
-                        webView.setX(x);
-                        webView.setY(y);
-                        webView.requestLayout();
-                        fullscreen = false;
-                        closeFullscreenButton.setVisibility(View.GONE);
-                    }
-                    else {
-                        ViewGroup.LayoutParams params = webView.getLayoutParams();
-                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                        webView.setX(0);
-                        webView.setY(0);
-                        webView.requestLayout();
-                        fullscreen = true;
-                        closeFullscreenButton.setVisibility(View.VISIBLE);
-                    }
-                }
-                if (call != null) {
-                    call.success();
-                }
-            }
+            
         });
     }
 
     @PluginMethod()
     public void canGoBack(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
+        getActivity().runOnUiThread(() -> {
+            
+            boolean result = false;
 
-                boolean result = false;
+            String webviewId = call.getString("webviewId", "");
+            
+            WebView _wv = this.getWebviewById(webviewId);
 
-                if (webView != null) {
-                    result = webView.canGoBack();
-                }
-
-                JSObject ret = new JSObject();
-                ret.put("result", result);
-
-               call.resolve(ret);
+            if (_wv != null) {
+                result = _wv.canGoBack();
             }
+            
+            JSObject ret = new JSObject();
+            ret.put("result", result);
+
+           call.resolve(ret);
         });
     }
 
     @PluginMethod()
     public void goBack(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (webView != null) {
-                    webView.goBack();
-                }
-                call.resolve();
+        getActivity().runOnUiThread(() -> {
+
+            String webviewId = call.getString("webviewId", "");
+             
+            WebView _wv = this.getWebviewById(webviewId);
+            
+            if (_wv != null) {
+                 _wv.goBack();
             }
+            
+            call.resolve();
         });
     }
 
 
     @PluginMethod()
     public void canGoForward(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
+        getActivity().runOnUiThread(() -> {
 
-                boolean result = false;
+            boolean result = false;
 
-                if (webView != null) {
-                    result = webView.canGoForward();
-                }
+            String webviewId = call.getString("webviewId", "");
+            
+            WebView _wv = this.getWebviewById(webviewId);
 
-                JSObject ret = new JSObject();
-                ret.put("result", result);
-
-               call.resolve(ret);
+            if (_wv != null) {
+                result = _wv.canGoForward();
             }
+            
+            JSObject ret = new JSObject();
+            ret.put("result", result);
+
+           call.resolve(ret);
+            
         });
     }
 
     @PluginMethod()
     public void goForward(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (webView != null) {
-                    webView.goForward();
-                }
-                call.success();
+        getActivity().runOnUiThread(() -> {
+
+            String webviewId = call.getString("webviewId", "");
+             
+            WebView _wv = this.getWebviewById(webviewId);
+
+            if (_wv != null) {
+                _wv.goForward();
             }
+            
         });
     }
 
     @PluginMethod()
     public void reload(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (webView != null) {
-                    webView.reload();
-                }
-                call.success();
-            }
+        getActivity().runOnUiThread(() -> {
+
+            String webviewId = call.getString("webviewId", "");
+
+            WebView _wv = this.getWebviewById(webviewId);
+            
+            if(_wv != null) _wv.reload();
+            
+            call.success();
+            
         });
     }
 
     @PluginMethod()
     public void loadUrl(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-            if (call.getString("url") != null) {
-                webView.loadUrl(call.getString("url"));
-                loadUrlCall = call;
+        getActivity().runOnUiThread(() -> {
+            String webviewId = call.getString("webviewId", "");
+            
+            WebView _wv = this.getWebviewById(webviewId);
+            
+            if (_wv != null && call.getString("url") != null) {
+                _wv.loadUrl(call.getString("url"));
+                loadUrlCalls.put(webviewId, call);
             }
-            }
+            
         });
     }
 
     @PluginMethod()
     public void handleNavigationEvent(final PluginCall call) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (webView != null && targetUrl != null) {
-                    if (call.getBoolean("allow")) {
-                        webView.loadUrl(targetUrl);
-                    }
-                    else {
-                        notifyListeners("pageLoaded", new JSObject());
-                    }
-                    targetUrl = null;
+        getActivity().runOnUiThread(() -> {
+
+            String webviewId = call.getString("webviewId", "");
+
+            WebView _wv = this.getWebviewById(webviewId);
+
+            if (_wv != null && targetUrls.containsKey(webviewId)) {
+                
+                String targetUrl = targetUrls.get(webviewId);
+                
+                if (call.getBoolean("allow") && !targetUrl.isEmpty()) {
+                    _wv.loadUrl(targetUrl);
+                } else {
+                    
+                    JSObject ret = new JSObject();
+                    ret.put("webviewId", webviewId);
+                    
+                    notifyListeners("pageLoaded", ret);
                 }
-                call.success();
+
+                targetUrls.remove(webviewId);
             }
+        
+            
+            call.success();
         });
     }
     

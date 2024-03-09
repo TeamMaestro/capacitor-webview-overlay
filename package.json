@@ -1,6 +1,6 @@
 {
     "name": "@botfi-app/capacitor-webview-embed",
-    "version": "3.1.9",
+    "version": "3.2.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -44,7 +44,9 @@
         "pub": "npm run build && npm publish --access=public"
     },
     "dependencies": {
-        "resize-observer-polyfill": "^1.5.1"
+        "@capgo/capacitor-updater": "^5.6.11",
+        "resize-observer-polyfill": "^1.5.1",
+        "uuid": "^9.0.1"
     },
     "devDependencies": {
         "@capacitor/android": "^4.6.3",

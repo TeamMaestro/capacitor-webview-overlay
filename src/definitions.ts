@@ -4,41 +4,43 @@ export interface IWebviewEmbedPlugin {
     /**
      * Open a webview with the given URL
      */
-    open(options: OpenOptions): Promise<void>;
+    open(options: OpenOptions): Promise<{result: string}>;
 
     /**
      * Close an open webview.
      */
-    close(): Promise<void>;
+    close(options: { webviewId: string }): Promise<void>;
 
     /**
      * Load a url in the webview.
      */
-    loadUrl(options: {url: string}): Promise<void>;
+    loadUrl(options: { webviewId: string, url: string}): Promise<void>;
 
     /**
      * Get snapshot image
      */
-    getSnapshot(): Promise<{src: string}>;
+    getSnapshot(options: { webviewId: string }): Promise<{src: string}>;
 
     show(): Promise<void>;
     hide(): Promise<void>;
 
     toggleFullscreen(): Promise<void>;
 
-    canGoBack(): Promise<{result: boolean}>;
-    goBack(): Promise<void>;
+    canGoBack(options: { webviewId: string }): Promise<{result: boolean}>;
+    goBack(options: { webviewId: string }): Promise<void>;
     
-    canGoForward(): Promise<{result: boolean}>;
-    goForward(): Promise<void>;
-    reload(): Promise<void>;
+    canGoForward(options: { webviewId: string }): Promise<{result: boolean}>;
+    goForward(options: { webviewId: string }): Promise<void>;
+    reload(options: { webviewId: string }): Promise<void>;
 
     
     handleNavigationEvent(options: {allow: boolean}): Promise<void>;
 
     updateDimensions(options: Dimensions): Promise<void>;
 
-    postMessage(options: { message: string }): Promise<void>;
+    postMessage(options: { webviewId: string, message: string }): Promise<void>;
+
+    setActiveWebview(options: { webviewId: string }): Promise<void>;
 
     evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;
 
@@ -63,9 +65,12 @@ interface OpenOptions extends Dimensions {
     userAgent?: string;
 
     webMessageJsObjectName?: string;
+
+    webviewId: string
 }
 
 interface Dimensions {
+    webviewId: string;
     width: number;
     height: number;
     x: number;

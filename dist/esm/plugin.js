@@ -1,34 +1,27 @@
 import { registerPlugin } from '@capacitor/core';
 import { ScriptInjectionTime } from './definitions';
 import ResizeObserver from 'resize-observer-polyfill';
+import { v4 as uuidv4 } from 'uuid';
 const WebviewEmbedPlugin = registerPlugin('WebviewEmbedPlugin');
 class WebviewEmbedClass {
-    open(options) {
-        this.element = options.element;
-        if (this.element && this.element.style) {
-            this.element.style.backgroundSize = 'cover';
-            this.element.style.backgroundRepeat = 'no-repeat';
-            this.element.style.backgroundPosition = 'center';
+    constructor() {
+        this.elements = {};
+        this.resizeObservers = {};
+    }
+    async open(options) {
+        let element = options.element;
+        let webviewId = (options.webviewId || "").trim();
+        if (webviewId == "") {
+            webviewId = uuidv4();
         }
-        const boundingBox = this.element.getBoundingClientRect();
-        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
-            setTimeout(() => {
-                this.toggleSnapshot(true);
-            }, 100);
-        });
-        this.resizeObserver = new ResizeObserver((entries) => {
-            for (const _entry of entries) {
-                const boundingBox = options.element.getBoundingClientRect();
-                WebviewEmbedPlugin.updateDimensions({
-                    width: Math.round(boundingBox.width),
-                    height: Math.round(boundingBox.height),
-                    x: Math.round(boundingBox.x),
-                    y: Math.round(boundingBox.y)
-                });
-            }
-        });
-        this.resizeObserver.observe(this.element);
-        return WebviewEmbedPlugin.open({
+        if (element && element.style) {
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundRepeat = 'no-repeat';
+            element.style.backgroundPosition = 'center';
+        }
+        const boundingBox = element.getBoundingClientRect();
+        let result = await WebviewEmbedPlugin.open({
+            webviewId,
             url: options.url,
             javascript: options.script ? options.script.javascript : '',
             userAgent: options.userAgent ? options.userAgent : '',
@@ -37,12 +30,43 @@ class WebviewEmbedClass {
             height: Math.round(boundingBox.height),
             x: Math.round(boundingBox.x),
             y: Math.round(boundingBox.y),
-            webMessageJsObjectName: (options.webMessageJsObjectName || "capWebviewEmbed")
+            webMessageJsObjectName: (options.webMessageJsObjectName || "__webviewEmbed")
         });
+        this.updateSnapshotEvent = WebviewEmbedPlugin.addListener('updateSnapshot', () => {
+            setTimeout(() => {
+                this.toggleSnapshot(webviewId, true);
+            }, 100);
+        });
+        this.resizeObservers[webviewId] = new ResizeObserver((entries) => {
+            for (const _entry of entries) {
+                const boundingBox = options.element.getBoundingClientRect();
+                WebviewEmbedPlugin.updateDimensions({
+                    webviewId,
+                    width: Math.round(boundingBox.width),
+                    height: Math.round(boundingBox.height),
+                    x: Math.round(boundingBox.x),
+                    y: Math.round(boundingBox.y)
+                });
+            }
+        });
+        this.resizeObservers[webviewId].observe(element);
+        this.elements[webviewId] = element;
+        return result;
     }
-    close() {
-        this.element = undefined;
-        this.resizeObserver.disconnect();
+    // returns the next active webview id 
+    close(webviewId) {
+        delete this.elements[webviewId];
+        let rb = this.resizeObservers[webviewId] || null;
+        if (rb && rb instanceof ResizeObserver) {
+            try {
+                this.resizeObservers[webviewId].disconnect();
+            }
+            catch (e) { }
+            delete this.resizeObservers[webviewId];
+        }
+        return WebviewEmbedPlugin.close({ webviewId });
+    }
+    removeAllEvents() {
         if (this.updateSnapshotEvent) {
             this.updateSnapshotEvent.remove();
         }
@@ -55,11 +79,12 @@ class WebviewEmbedClass {
         if (this.navigationHandlerEvent) {
             this.navigationHandlerEvent.remove();
         }
-        return WebviewEmbedPlugin.close();
     }
-    async toggleSnapshot(snapshotVisible) {
+    async toggleSnapshot(webviewId, snapshotVisible) {
+        let _self = this;
         return new Promise(async (resolve) => {
-            const snapshot = (await WebviewEmbedPlugin.getSnapshot()).src;
+            let element = _self.elements[webviewId];
+            const snapshot = (await WebviewEmbedPlugin.getSnapshot({ webviewId })).src;
             if (snapshotVisible) {
                 if (snapshot) {
                     const buffer = await (await fetch('data:image/jpeg;base64,' + snapshot)).arrayBuffer();
@@ -67,8 +92,8 @@ class WebviewEmbedClass {
                     const blobUrl = URL.createObjectURL(blob);
                     const img = new Image();
                     img.onload = async () => {
-                        if (this.element && this.element.style) {
-                            this.element.style.backgroundImage = `url(${blobUrl})`;
+                        if (element && element.style) {
+                            element.style.backgroundImage = `url(${blobUrl})`;
                         }
                         setTimeout(async () => {
                             await WebviewEmbedPlugin.hide();
@@ -78,21 +103,24 @@ class WebviewEmbedClass {
                     img.src = blobUrl;
                 }
                 else {
-                    if (this.element && this.element.style) {
-                        this.element.style.backgroundImage = `none`;
+                    if (element && element.style) {
+                        element.style.backgroundImage = `none`;
                     }
                     await WebviewEmbedPlugin.hide();
                     resolve();
                 }
             }
             else {
-                if (this.element && this.element.style) {
-                    this.element.style.backgroundImage = `none`;
+                if (element && element.style) {
+                    element.style.backgroundImage = `none`;
                 }
                 await WebviewEmbedPlugin.show();
                 resolve();
             }
         });
+    }
+    async setActiveWebview(webviewId) {
+        WebviewEmbedPlugin.setActiveWebview({ webviewId });
     }
     async evaluateJavaScript(javascript) {
         return (await WebviewEmbedPlugin.evaluateJavaScript({
@@ -119,23 +147,23 @@ class WebviewEmbedClass {
     toggleFullscreen() {
         WebviewEmbedPlugin.toggleFullscreen();
     }
-    async canGoBack() {
-        return (await WebviewEmbedPlugin.canGoBack()).result;
+    async canGoBack(webviewId) {
+        return (await WebviewEmbedPlugin.canGoBack({ webviewId })).result;
     }
-    goBack() {
-        WebviewEmbedPlugin.goBack();
+    goBack(webviewId) {
+        WebviewEmbedPlugin.goBack({ webviewId });
     }
-    async canGoForward() {
-        return (await WebviewEmbedPlugin.canGoForward()).result;
+    async canGoForward(webviewId) {
+        return (await WebviewEmbedPlugin.canGoForward({ webviewId })).result;
     }
-    goForward() {
-        WebviewEmbedPlugin.goForward();
+    goForward(webviewId) {
+        WebviewEmbedPlugin.goForward({ webviewId });
     }
-    reload() {
-        WebviewEmbedPlugin.reload();
+    reload(webviewId) {
+        WebviewEmbedPlugin.reload({ webviewId });
     }
-    loadUrl(url) {
-        return WebviewEmbedPlugin.loadUrl({ url });
+    loadUrl(webviewId, url) {
+        return WebviewEmbedPlugin.loadUrl({ webviewId, url });
     }
     async hide() {
         return WebviewEmbedPlugin.hide();
@@ -146,9 +174,9 @@ class WebviewEmbedClass {
     async updateDimensions(options) {
         return WebviewEmbedPlugin.updateDimensions(options);
     }
-    async postMessage(message) {
-        return WebviewEmbedPlugin.postMessage({ message });
+    async postMessage(webviewId, message) {
+        return WebviewEmbedPlugin.postMessage({ webviewId, message });
     }
 }
-export const WebviewEmbed = WebviewEmbedClass;
+export const WebviewEmbed = new WebviewEmbedClass();
 //# sourceMappingURL=plugin.js.map

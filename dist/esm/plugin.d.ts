@@ -1,6 +1,5 @@
 import { PluginListenerHandle } from '@capacitor/core';
 import { ScriptInjectionTime } from './definitions';
-import ResizeObserver from 'resize-observer-polyfill';
 export interface WebviewEmbedOpenOptions {
     /**
      * The URL to open the webview to
@@ -24,27 +23,40 @@ export interface WebviewEmbedOpenOptions {
      * communnication from the webview, default: capWebviewEmbed
      */
     webMessageJsObjectName?: string;
+    /**
+     * incase of multiple tabs, the webview to use
+     */
+    webviewId?: string;
 }
 interface Dimensions {
+    webviewId: string;
     width: number;
     height: number;
     x: number;
     y: number;
 }
+interface ObjectLiteral {
+    [key: string]: any;
+}
 declare class WebviewEmbedClass {
-    element: HTMLElement;
+    elements: ObjectLiteral;
     updateSnapshotEvent: PluginListenerHandle;
     pageLoadedEvent: PluginListenerHandle;
     progressEvent: PluginListenerHandle;
     messageEvent: PluginListenerHandle;
     navigationHandlerEvent: PluginListenerHandle;
-    resizeObserver: ResizeObserver;
-    open(options: WebviewEmbedOpenOptions): Promise<void>;
-    close(): Promise<void>;
-    toggleSnapshot(snapshotVisible: boolean): Promise<void>;
+    resizeObservers: ObjectLiteral;
+    open(options: WebviewEmbedOpenOptions): Promise<{
+        result: string;
+    }>;
+    close(webviewId: string): Promise<void>;
+    removeAllEvents(): void;
+    toggleSnapshot(webviewId: string, snapshotVisible: boolean): Promise<void>;
+    setActiveWebview(webviewId: string): Promise<void>;
     evaluateJavaScript(javascript: string): Promise<string>;
     onPageLoaded(listenerFunc: () => void): void;
     onProgress(listenerFunc: (progress: {
+        webviewId: string;
         value: number;
     }) => void): void;
     onMessage(listenerFunc: (message: any) => void): void;
@@ -52,19 +64,20 @@ declare class WebviewEmbedClass {
         url: string;
         newWindow: boolean;
         sameHost: boolean;
+        webviewId: string;
         complete: (allow: boolean) => void;
     }) => void): void;
     toggleFullscreen(): void;
-    canGoBack(): Promise<boolean>;
-    goBack(): void;
-    canGoForward(): Promise<boolean>;
-    goForward(): void;
-    reload(): void;
-    loadUrl(url: string): Promise<void>;
+    canGoBack(webviewId: string): Promise<boolean>;
+    goBack(webviewId: string): void;
+    canGoForward(webviewId: string): Promise<boolean>;
+    goForward(webviewId: string): void;
+    reload(webviewId: string): void;
+    loadUrl(webviewId: string, url: string): Promise<void>;
     hide(): Promise<void>;
     show(): Promise<void>;
     updateDimensions(options: Dimensions): Promise<void>;
-    postMessage(message: string): Promise<void>;
+    postMessage(webviewId: string, message: string): Promise<void>;
 }
-export declare const WebviewEmbed: typeof WebviewEmbedClass;
+export declare const WebviewEmbed: WebviewEmbedClass;
 export {};

@@ -1,41 +1,57 @@
 import { PluginListenerHandle } from '@capacitor/core';
 
-export interface IWebviewOverlayPlugin {
+export interface IWebviewEmbedPlugin {
     /**
      * Open a webview with the given URL
      */
-    open(options: OpenOptions): Promise<void>;
+    open(options: OpenOptions): Promise<{result: string}>;
 
     /**
      * Close an open webview.
      */
-    close(): Promise<void>;
+    close(options: { webviewId: string }): Promise<void>;
 
     /**
      * Load a url in the webview.
      */
-    loadUrl(options: {url: string}): Promise<void>;
+    loadUrl(options: { webviewId: string, url: string}): Promise<void>;
 
     /**
      * Get snapshot image
      */
-    getSnapshot(): Promise<{src: string}>;
+    getSnapshot(options: { webviewId: string }): Promise<{src: string}>;
 
     show(): Promise<void>;
     hide(): Promise<void>;
 
     toggleFullscreen(): Promise<void>;
-    goBack(): Promise<void>;
-    goForward(): Promise<void>;
-    reload(): Promise<void>;
+
+    canGoBack(options: { webviewId: string }): Promise<{result: boolean}>;
+    goBack(options: { webviewId: string }): Promise<void>;
+    
+    canGoForward(options: { webviewId: string }): Promise<{result: boolean}>;
+    goForward(options: { webviewId: string }): Promise<void>;
+    reload(options: { webviewId: string }): Promise<void>;
+
     
     handleNavigationEvent(options: {allow: boolean}): Promise<void>;
 
     updateDimensions(options: Dimensions): Promise<void>;
 
+    postMessage(options: { webviewId: string, message: string }): Promise<void>;
+
+    setActiveWebview(options: { webviewId: string }): Promise<void>;
+
     evaluateJavaScript(options: {javascript: string}): Promise<{result: string}>;
 
-    addListener(eventName: 'pageLoaded' | 'updateSnapshot' | 'progress' | 'navigationHandler', listenerFunc: (...args: any[]) => void): PluginListenerHandle;
+    addListener(eventName: 
+        'pageLoaded' | 
+        'updateSnapshot' | 
+        'progress' | 
+        'navigationHandler' | 
+        'message', 
+        listenerFunc: (...args: any[]) => void
+    ): PluginListenerHandle;
 }
 
 interface OpenOptions extends Dimensions {
@@ -47,9 +63,14 @@ interface OpenOptions extends Dimensions {
     javascript?: string;
     injectionTime?: ScriptInjectionTime;
     userAgent?: string;
+
+    webMessageJsObjectName?: string;
+
+    webviewId: string
 }
 
 interface Dimensions {
+    webviewId: string;
     width: number;
     height: number;
     x: number;

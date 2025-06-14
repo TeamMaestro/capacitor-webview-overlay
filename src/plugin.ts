@@ -1,8 +1,6 @@
 import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
 import { IWebviewOverlayPlugin, ScriptInjectionTime } from './definitions';
 
-import ResizeObserver from 'resize-observer-polyfill';
-
 const WebviewOverlayPlugin = registerPlugin<IWebviewOverlayPlugin>('WebviewOverlayPlugin');
 
 export interface WebviewOverlayOpenOptions {

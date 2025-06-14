@@ -107,7 +107,7 @@ public class WebviewOverlayPlugin extends Plugin {
                 }
 
                 // Temp fix until this setting is on by default
-                bridge.getWebView().getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+                getBridge().getWebView().getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
 
                 final String javascript = call.getString("javascript", "");
 

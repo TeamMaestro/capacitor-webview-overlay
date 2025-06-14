@@ -1,6 +1,6 @@
 {
     "name": "@teamhive/capacitor-webview-overlay",
-    "version": "3.1.1",
+    "version": "4.0.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -42,8 +42,7 @@
         "watch": "tsc --watch",
         "prepublishOnly": "npm run build"
     },
-    "dependencies": {
-    },
+    "dependencies": {},
     "devDependencies": {
         "@capacitor/android": "^7.3.0",
         "@capacitor/core": "^7.3.0",

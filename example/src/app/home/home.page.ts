@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy, NgZone } from '@angular/core';
 import { Platform, MenuController } from '@ionic/angular';
-import { WebviewOverlay } from '@teamhive/capacitor-webview-overlay';
+import { WebviewOverlay } from '@teammaestro/capacitor-webview-overlay';
 import { Plugins } from '@capacitor/core';
 const { Browser } = Plugins;
 

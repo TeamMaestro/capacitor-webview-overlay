@@ -25,7 +25,7 @@
         "@capacitor/core": "latest",
         "@capacitor/ios": "latest",
         "@ionic/angular": "^4.1.0",
-        "@teamhive/capacitor-webview-overlay": "file:../",
+        "@teammaestro/capacitor-webview-overlay": "file:../",
         "core-js": "^2.5.4",
         "rxjs": "~6.3.3",
         "zone.js": "~0.8.29"

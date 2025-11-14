@@ -1,5 +1,5 @@
 {
-    "name": "@teamhive/capacitor-webview-overlay",
+    "name": "@teammaestro/capacitor-webview-overlay",
     "version": "4.0.2",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
@@ -11,16 +11,16 @@
         "android/build.gradle",
         "dist/",
         "ios/Plugin/",
-        "TeamhiveCapacitorWebviewOverlay.podspec"
+        "TeammaestroCapacitorWebviewOverlay.podspec"
     ],
     "author": "",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/TeamHive/capacitor-webview-overlay.git"
+        "url": "git+https://github.com/Teammaestro/capacitor-webview-overlay.git"
     },
     "bugs": {
-        "url": "https://github.com/TeamHive/capacitor-webview-overlay/issues"
+        "url": "https://github.com/Teammaestro/capacitor-webview-overlay/issues"
     },
     "keywords": [
         "capacitor",

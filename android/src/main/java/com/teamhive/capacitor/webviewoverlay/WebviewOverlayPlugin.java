@@ -1,4 +1,4 @@
-package com.teamhive.capacitor.webviewoverlay;
+package com.teammaestro.capacitor.webviewoverlay;
 import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
@@ -20,7 +20,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.teamhive.capacitor.webviewoverlay.R;
+import com.teammaestro.capacitor.webviewoverlay.R;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

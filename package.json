@@ -1,6 +1,6 @@
 {
     "name": "@teammaestro/capacitor-webview-overlay",
-    "version": "4.1.0",
+    "version": "5.0.0",
     "description": "Webview Overlay",
     "main": "dist/plugin.cjs.js",
     "module": "dist/esm/index.js",
@@ -15,6 +15,9 @@
     ],
     "author": "",
     "license": "MIT",
+    "publishConfig": {
+        "access": "restricted"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Teammaestro/capacitor-webview-overlay.git"
@@ -44,9 +47,9 @@
     },
     "dependencies": {},
     "devDependencies": {
-        "@capacitor/android": "^7.3.0",
-        "@capacitor/core": "^7.3.0",
-        "@capacitor/ios": "^7.3.0",
+        "@capacitor/android": "^8.0.0",
+        "@capacitor/core": "^8.0.0",
+        "@capacitor/ios": "^8.0.0",
         "@ionic/eslint-config": "^0.4.0",
         "@ionic/prettier-config": "^4.0.0",
         "@ionic/swiftlint-config": "^1.1.2",
@@ -59,7 +62,7 @@
         "typescript": "^5.0.0"
     },
     "peerDependencies": {
-        "@capacitor/core": "^7.3.0"
+        "@capacitor/core": ">=8.0.0"
     },
     "prettier": "@ionic/prettier-config",
     "swiftlint": "@ionic/swiftlint-config",
